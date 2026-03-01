@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { ActiveEvent, GameEventTemplate } from '../../types/index.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface NewsItem {
   id: string;
@@ -24,20 +24,20 @@ const SEVERITY_COLORS: Record<string, string> = {
   catastrophic: PALETTE.purple,
 };
 
-const DISPLAY_DURATION = 6000; // ms to show each news item
+const DISPLAY_DURATION = 6000;
 const MAX_VISIBLE = 3;
 
 export function NewsTicker({ events, templates, currentDay }: NewsTickerProps) {
   const [visibleItems, setVisibleItems] = useState<NewsItem[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
 
+  const timeoutIdsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
   useEffect(() => {
-    // Find newly resolved events we haven't shown yet
     const newItems: NewsItem[] = [];
     for (const event of events) {
       if (!event.resolved) continue;
       if (seenIdsRef.current.has(event.id)) continue;
-      // Only show events from the last 3 days
       if (currentDay - event.triggeredOnDay > 3) continue;
 
       const template = templates.find((t) => t.id === event.templateId);
@@ -56,13 +56,21 @@ export function NewsTicker({ events, templates, currentDay }: NewsTickerProps) {
     if (newItems.length > 0) {
       setVisibleItems((prev) => [...newItems, ...prev].slice(0, MAX_VISIBLE));
 
-      // Schedule removal
       for (const item of newItems) {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           setVisibleItems((prev) => prev.filter((i) => i.id !== item.id));
+          timeoutIdsRef.current.delete(timeoutId);
         }, DISPLAY_DURATION);
+        timeoutIdsRef.current.add(timeoutId);
       }
     }
+
+    return () => {
+      for (const id of timeoutIdsRef.current) {
+        clearTimeout(id);
+      }
+      timeoutIdsRef.current.clear();
+    };
   }, [events, templates, currentDay]);
 
   if (visibleItems.length === 0) return null;
@@ -76,7 +84,7 @@ export function NewsTicker({ events, templates, currentDay }: NewsTickerProps) {
     gap: '6px',
     zIndex: 800,
     pointerEvents: 'none',
-    maxWidth: '400px',
+    maxWidth: '360px',
   };
 
   return (
@@ -86,23 +94,22 @@ export function NewsTicker({ events, templates, currentDay }: NewsTickerProps) {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
         }
-        @keyframes newsFadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
       `}</style>
       {visibleItems.map((item) => {
         const color = SEVERITY_COLORS[item.severity] ?? PALETTE.text;
         const itemStyle: CSSProperties = {
-          backgroundColor: `${PALETTE.panel}ee`,
+          backgroundColor: `${PALETTE.panel}f0`,
           borderLeft: `3px solid ${color}`,
-          padding: '8px 12px',
+          borderRadius: '0 8px 8px 0',
+          padding: '10px 14px',
           animation: 'newsSlideIn 0.3s ease-out',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         };
         const titleStyle: CSSProperties = {
-          fontFamily: "'Press Start 2P', cursive",
-          fontSize: '7px',
+          fontFamily: FONT.ui,
+          fontSize: '12px',
+          fontWeight: 600,
           color: color,
           marginBottom: '4px',
           display: 'flex',
@@ -110,17 +117,20 @@ export function NewsTicker({ events, templates, currentDay }: NewsTickerProps) {
           gap: '6px',
         };
         const badgeStyle: CSSProperties = {
-          fontSize: '6px',
+          fontFamily: FONT.ui,
+          fontSize: '9px',
+          fontWeight: 500,
           color: PALETTE.textDim,
-          border: `1px solid ${PALETTE.panelLight}`,
+          border: `1px solid ${PALETTE.panelBorder}`,
+          borderRadius: '3px',
           padding: '1px 4px',
           textTransform: 'uppercase',
         };
         const descStyle: CSSProperties = {
-          fontFamily: "'VT323', monospace",
-          fontSize: '14px',
+          fontFamily: FONT.ui,
+          fontSize: '12px',
           color: PALETTE.textDim,
-          lineHeight: 1.3,
+          lineHeight: 1.4,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           display: '-webkit-box',

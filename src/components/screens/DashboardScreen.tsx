@@ -8,7 +8,7 @@ import {
   selectActiveStreamCount,
 } from '../../store/selectors.ts';
 import { calculateUnrealizedPnL } from '../../engine/revenue/portfolioManager.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 import { ASSET_DEFINITIONS } from '../../data/assets.ts';
 import { EVENT_TEMPLATES } from '../../data/events.ts';
 import { formatCurrency } from '../../utils/format.ts';
@@ -31,14 +31,12 @@ export function DashboardScreen() {
   const portfolio = useGameStore((s) => s.portfolio);
   const eventHistory = useGameStore((s) => s.events.history);
 
-  const state = useGameStore.getState();
-  const netWorth = selectNetWorth(state);
-  const portfolioValue = selectPortfolioValue(state);
-  const totalEmployees = selectTotalEmployees(state);
-  const activeStreams = selectActiveStreamCount(state);
-  const unrealizedPnL = calculateUnrealizedPnL(portfolio, market.assets);
+  const netWorth = useGameStore((s) => selectNetWorth(s));
+  const portfolioValue = useGameStore((s) => selectPortfolioValue(s));
+  const totalEmployees = useGameStore((s) => selectTotalEmployees(s));
+  const activeStreams = useGameStore((s) => selectActiveStreamCount(s));
+  const unrealizedPnL = useMemo(() => calculateUnrealizedPnL(portfolio, market.assets), [portfolio, market.assets]);
 
-  // Monthly P&L sparkline (last 6 months)
   const profitHistory = useMemo(() => {
     return company.financialHistory.slice(-6).map((r) => r.profit);
   }, [company.financialHistory]);
@@ -47,12 +45,10 @@ export function DashboardScreen() {
     ? company.financialHistory[company.financialHistory.length - 1]
     : null;
 
-  // Recent events (last 5)
   const recentEvents = useMemo(() => {
     return eventHistory.slice(-5).reverse();
   }, [eventHistory]);
 
-  // Top movers
   const movers = useMemo(() => {
     const items = ASSET_DEFINITIONS.map((def) => {
       const assetState = market.assets[def.id];
@@ -69,115 +65,97 @@ export function DashboardScreen() {
         change,
       };
     }).filter(Boolean) as {
-      id: string;
-      ticker: string;
-      name: string;
-      price: number;
-      previousPrice: number;
-      change: number;
+      id: string; ticker: string; name: string;
+      price: number; previousPrice: number; change: number;
     }[];
 
     const sorted = [...items].sort((a, b) => b.change - a.change);
-    return {
-      gainers: sorted.slice(0, 3),
-      losers: sorted.slice(-3).reverse(),
-    };
+    return { gainers: sorted.slice(0, 3), losers: sorted.slice(-3).reverse() };
   }, [market.assets]);
 
-  // Styles
-  const gridStyle: CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '16px',
-  };
+  const gridStyle: CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' };
 
   const statsGridStyle: CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '12px',
   };
 
   const statCardStyle: CSSProperties = {
     backgroundColor: PALETTE.bgLight,
-    border: `2px solid ${PALETTE.panelLight}`,
-    padding: '12px',
+    border: `1px solid ${PALETTE.panelBorder}`,
+    borderRadius: '8px',
+    padding: '14px',
     textAlign: 'center',
   };
 
   const statLabelStyle: CSSProperties = {
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '7px',
+    fontFamily: FONT.ui,
+    fontSize: '10px',
+    fontWeight: 600,
     color: PALETTE.textDim,
-    marginBottom: '8px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    marginBottom: '6px',
   };
 
   const statValueStyle: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '24px',
+    fontFamily: FONT.mono,
+    fontSize: '18px',
+    fontWeight: 600,
     color: PALETTE.text,
   };
 
-  const vtFont: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
-  };
+  const label: CSSProperties = { fontFamily: FONT.ui, fontSize: '13px', color: PALETTE.textSecondary };
+  const value: CSSProperties = { fontFamily: FONT.mono, fontSize: '14px', color: PALETTE.text };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Row 1: Company Overview + Monthly P&L */}
+      {/* Row 1 */}
       <div style={gridStyle}>
         <PixelPanel title="Company Overview">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={vtFont}>
-              <span style={{ color: PALETTE.textDim }}>Name: </span>
-              <span style={{ color: PALETTE.gold }}>{company.name}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <span style={label}>Name: </span>
+              <span style={{ ...value, color: PALETTE.accent }}>{company.name}</span>
             </div>
             <div>
-              <span style={{ ...vtFont, fontSize: '32px', color: PALETTE.green }}>
+              <span style={{ fontFamily: FONT.mono, fontSize: '26px', fontWeight: 700, color: PALETTE.green }}>
                 {formatCurrency(company.cash)}
               </span>
-              <span style={{ ...vtFont, fontSize: '14px', color: PALETTE.textDim, marginLeft: '8px' }}>
-                CASH
-              </span>
+              <span style={{ ...label, marginLeft: '8px', fontSize: '11px' }}>CASH</span>
             </div>
-            <div style={vtFont}>
-              <span style={{ color: PALETTE.textDim }}>Net Worth: </span>
-              <span style={{ color: PALETTE.cyan }}>{formatCurrency(netWorth)}</span>
+            <div>
+              <span style={label}>Net Worth: </span>
+              <span style={{ ...value, color: PALETTE.cyan }}>{formatCurrency(netWorth)}</span>
             </div>
-            <StatBar
-              value={company.reputation}
-              maxValue={100}
-              color={PALETTE.gold}
-              label="Reputation"
-            />
-            <div style={vtFont}>
-              <span style={{ color: PALETTE.textDim }}>Office Level: </span>
-              <span style={{ color: PALETTE.blue }}>{company.officeLevel}</span>
+            <StatBar value={company.reputation} maxValue={100} color={PALETTE.gold} label="Reputation" />
+            <div>
+              <span style={label}>Office Level: </span>
+              <span style={{ ...value, color: PALETTE.accent }}>{company.officeLevel}</span>
             </div>
           </div>
         </PixelPanel>
 
         <PixelPanel title="Monthly P&L">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {latestReport ? (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', ...vtFont }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>
-                    <span style={{ color: PALETTE.textDim }}>Revenue: </span>
-                    <span style={{ color: PALETTE.green }}>{formatCurrency(latestReport.revenue)}</span>
+                    <span style={label}>Revenue: </span>
+                    <span style={{ ...value, color: PALETTE.green }}>{formatCurrency(latestReport.revenue)}</span>
                   </span>
                   <span>
-                    <span style={{ color: PALETTE.textDim }}>Expenses: </span>
-                    <span style={{ color: PALETTE.red }}>{formatCurrency(latestReport.expenses)}</span>
+                    <span style={label}>Expenses: </span>
+                    <span style={{ ...value, color: PALETTE.red }}>{formatCurrency(latestReport.expenses)}</span>
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={{ ...vtFont, color: PALETTE.textDim }}>Profit: </span>
+                    <span style={label}>Profit: </span>
                     <span style={{
-                      ...vtFont,
-                      fontSize: '28px',
+                      fontFamily: FONT.mono, fontSize: '22px', fontWeight: 700,
                       color: latestReport.profit >= 0 ? PALETTE.green : PALETTE.red,
                     }}>
                       {formatCurrency(latestReport.profit)}
@@ -185,47 +163,26 @@ export function DashboardScreen() {
                   </div>
                   {profitHistory.length >= 2 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontFamily: "'Press Start 2P', cursive", fontSize: '6px', color: PALETTE.textDim, marginBottom: '4px' }}>
-                        6-MO TREND
-                      </span>
+                      <span style={{ ...label, fontSize: '10px', marginBottom: '4px' }}>6-MO TREND</span>
                       <SparkLine data={profitHistory} width={100} height={30} />
                     </div>
                   )}
                 </div>
-                {/* Revenue vs Expenses bar */}
-                <div style={{ display: 'flex', gap: '4px', height: '20px' }}>
+                <div style={{ display: 'flex', gap: '4px', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
                   {latestReport.revenue > 0 && (
-                    <div style={{
-                      flex: latestReport.revenue,
-                      backgroundColor: PALETTE.green,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: "'VT323', monospace",
-                      fontSize: '12px',
-                      color: PALETTE.black,
-                    }}>
-                      Rev
-                    </div>
+                    <div style={{ flex: latestReport.revenue, backgroundColor: PALETTE.green, borderRadius: '3px' }} />
                   )}
                   {latestReport.expenses > 0 && (
-                    <div style={{
-                      flex: latestReport.expenses,
-                      backgroundColor: PALETTE.red,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: "'VT323', monospace",
-                      fontSize: '12px',
-                      color: PALETTE.white,
-                    }}>
-                      Exp
-                    </div>
+                    <div style={{ flex: latestReport.expenses, backgroundColor: PALETTE.red, borderRadius: '3px' }} />
                   )}
+                </div>
+                <div style={{ display: 'flex', gap: '16px', ...label, fontSize: '11px' }}>
+                  <span><span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: PALETTE.green, borderRadius: '2px', marginRight: '4px' }} />Revenue</span>
+                  <span><span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: PALETTE.red, borderRadius: '2px', marginRight: '4px' }} />Expenses</span>
                 </div>
               </>
             ) : (
-              <div style={{ ...vtFont, color: PALETTE.textDim }}>
+              <div style={{ ...label, color: PALETTE.textDim }}>
                 No monthly data yet. Reports generate every 30 days.
               </div>
             )}
@@ -233,49 +190,22 @@ export function DashboardScreen() {
         </PixelPanel>
       </div>
 
-      {/* Row 2: Quick Stats Grid */}
+      {/* Row 2: Quick Stats */}
       <PixelPanel title="Quick Stats">
         <div style={statsGridStyle}>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>EMPLOYEES</div>
-            <div style={statValueStyle}>{totalEmployees}</div>
-          </div>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>ACTIVE STREAMS</div>
-            <div style={statValueStyle}>{activeStreams}</div>
-          </div>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>PORTFOLIO VALUE</div>
-            <div style={{ ...statValueStyle, color: PALETTE.cyan }}>
-              {formatCurrency(portfolioValue)}
+          {[
+            { label: 'EMPLOYEES', value: String(totalEmployees) },
+            { label: 'ACTIVE STREAMS', value: String(activeStreams) },
+            { label: 'PORTFOLIO VALUE', value: formatCurrency(portfolioValue), color: PALETTE.cyan },
+            { label: 'UNREALIZED P&L', value: formatCurrency(unrealizedPnL), color: unrealizedPnL >= 0 ? PALETTE.green : PALETTE.red },
+            { label: 'MARKET', value: market.globalRegime === 'bull' ? '\u25B2 Bull' : market.globalRegime === 'bear' ? '\u25BC Bear' : '\u25C6 Sideways', color: market.globalRegime === 'bull' ? PALETTE.green : market.globalRegime === 'bear' ? PALETTE.red : PALETTE.gold },
+            { label: 'DAYS PLAYED', value: String(time.day) },
+          ].map((stat) => (
+            <div key={stat.label} style={statCardStyle}>
+              <div style={statLabelStyle}>{stat.label}</div>
+              <div style={{ ...statValueStyle, color: stat.color ?? PALETTE.text }}>{stat.value}</div>
             </div>
-          </div>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>UNREALIZED P&L</div>
-            <div style={{
-              ...statValueStyle,
-              color: unrealizedPnL >= 0 ? PALETTE.green : PALETTE.red,
-            }}>
-              {formatCurrency(unrealizedPnL)}
-            </div>
-          </div>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>MARKET</div>
-            <div style={{
-              ...statValueStyle,
-              color: market.globalRegime === 'bull'
-                ? PALETTE.green
-                : market.globalRegime === 'bear'
-                  ? PALETTE.red
-                  : PALETTE.gold,
-            }}>
-              {market.globalRegime === 'bull' ? '\u25B2 Bull' : market.globalRegime === 'bear' ? '\u25BC Bear' : '\u25C6 Sideways'}
-            </div>
-          </div>
-          <div style={statCardStyle}>
-            <div style={statLabelStyle}>DAYS PLAYED</div>
-            <div style={statValueStyle}>{time.day}</div>
-          </div>
+          ))}
         </div>
       </PixelPanel>
 
@@ -289,97 +219,64 @@ export function DashboardScreen() {
                 const severity = tmpl?.severity ?? 'minor';
                 const sevColor = SEVERITY_COLORS[severity] ?? PALETTE.textDim;
                 return (
-                  <div
-                    key={evt.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '4px 8px',
-                      backgroundColor: PALETTE.bgLight,
-                      border: `1px solid ${PALETTE.panelLight}`,
-                    }}
-                  >
+                  <div key={evt.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 10px', backgroundColor: PALETTE.bgLight,
+                    border: `1px solid ${PALETTE.panelBorder}`, borderRadius: '6px',
+                  }}>
                     <span style={{
-                      fontFamily: "'Press Start 2P', cursive",
-                      fontSize: '6px',
-                      color: sevColor,
-                      border: `1px solid ${sevColor}`,
-                      padding: '2px 4px',
-                      textTransform: 'uppercase',
-                      flexShrink: 0,
+                      fontFamily: FONT.ui, fontSize: '9px', fontWeight: 600,
+                      color: sevColor, border: `1px solid ${sevColor}`,
+                      borderRadius: '3px', padding: '2px 6px',
+                      textTransform: 'uppercase', flexShrink: 0,
                     }}>
                       {severity}
                     </span>
-                    <span style={{ ...vtFont, fontSize: '16px', flex: 1 }}>
+                    <span style={{ fontFamily: FONT.ui, fontSize: '13px', flex: 1, color: PALETTE.text }}>
                       {tmpl?.name ?? evt.templateId}
                     </span>
-                    <span style={{ ...vtFont, fontSize: '14px', color: PALETTE.textDim, flexShrink: 0 }}>
+                    <span style={{ fontFamily: FONT.mono, fontSize: '11px', color: PALETTE.textDim, flexShrink: 0 }}>
                       Day {evt.triggeredOnDay}
                     </span>
                   </div>
                 );
               })
             ) : (
-              <div style={{ ...vtFont, color: PALETTE.textDim }}>No events yet.</div>
+              <div style={{ ...label, color: PALETTE.textDim }}>No events yet.</div>
             )}
           </div>
         </PixelPanel>
 
         <PixelPanel title="Top Movers">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <div style={{
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: '7px',
-                color: PALETTE.green,
-                marginBottom: '6px',
-              }}>
-                TOP GAINERS
+              <div style={{ fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600, color: PALETTE.green, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Top Gainers
               </div>
               {movers.gainers.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '4px 0',
-                    borderBottom: `1px solid ${PALETTE.panelLight}`,
-                    ...vtFont,
-                    fontSize: '18px',
-                  }}
-                >
-                  <span style={{ color: PALETTE.gold, minWidth: '60px' }}>{m.ticker}</span>
-                  <span>{formatCurrency(m.price)}</span>
+                <div key={m.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '6px 0', borderBottom: `1px solid ${PALETTE.panelBorder}`,
+                  fontFamily: FONT.mono, fontSize: '13px',
+                }}>
+                  <span style={{ color: PALETTE.accent, minWidth: '60px', fontWeight: 500 }}>{m.ticker}</span>
+                  <span style={{ color: PALETTE.text }}>{formatCurrency(m.price)}</span>
                   <PriceChange current={m.price} previous={m.previousPrice} format="percent" />
                 </div>
               ))}
             </div>
             <div>
-              <div style={{
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: '7px',
-                color: PALETTE.red,
-                marginBottom: '6px',
-              }}>
-                TOP LOSERS
+              <div style={{ fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600, color: PALETTE.red, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Top Losers
               </div>
               {movers.losers.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '4px 0',
-                    borderBottom: `1px solid ${PALETTE.panelLight}`,
-                    ...vtFont,
-                    fontSize: '18px',
-                  }}
-                >
-                  <span style={{ color: PALETTE.gold, minWidth: '60px' }}>{m.ticker}</span>
-                  <span>{formatCurrency(m.price)}</span>
+                <div key={m.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '6px 0', borderBottom: `1px solid ${PALETTE.panelBorder}`,
+                  fontFamily: FONT.mono, fontSize: '13px',
+                }}>
+                  <span style={{ color: PALETTE.accent, minWidth: '60px', fontWeight: 500 }}>{m.ticker}</span>
+                  <span style={{ color: PALETTE.text }}>{formatCurrency(m.price)}</span>
                   <PriceChange current={m.price} previous={m.previousPrice} format="percent" />
                 </div>
               ))}

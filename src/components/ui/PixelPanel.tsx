@@ -1,5 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface PixelPanelProps {
   title?: string;
@@ -16,36 +16,35 @@ export function PixelPanel({
   className = '',
   style,
 }: PixelPanelProps) {
-  const variantClass =
-    variant === 'dark'
-      ? 'is-dark'
-      : variant === 'rounded'
-        ? 'is-rounded'
-        : '';
-
   const containerStyle: CSSProperties = {
     backgroundColor: variant === 'dark' ? PALETTE.bgLight : PALETTE.panel,
-    color: PALETTE.text,
+    border: `1px solid ${PALETTE.panelBorder}`,
+    borderRadius: '8px',
+    padding: title ? '0' : '16px',
+    overflow: 'hidden',
     ...style,
   };
 
   const titleStyle: CSSProperties = {
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '10px',
-    color: PALETTE.gold,
+    fontFamily: FONT.ui,
+    fontSize: '11px',
+    fontWeight: 600,
+    color: PALETTE.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    padding: '10px 16px',
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    backgroundColor: PALETTE.bgLight,
+  };
+
+  const bodyStyle: CSSProperties = {
+    padding: '16px',
   };
 
   return (
-    <div
-      className={`nes-container ${variantClass} ${title ? 'with-title' : ''} ${className}`.trim()}
-      style={containerStyle}
-    >
-      {title && (
-        <p className="title" style={titleStyle}>
-          {title}
-        </p>
-      )}
-      {children}
+    <div className={className} style={containerStyle}>
+      {title && <div style={titleStyle}>{title}</div>}
+      <div style={bodyStyle}>{children}</div>
     </div>
   );
 }

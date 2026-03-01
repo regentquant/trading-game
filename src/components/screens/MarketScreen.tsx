@@ -2,9 +2,10 @@ import { useState, useMemo, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 import type { AssetClass } from '../../types/index.ts';
 import { useGameStore } from '../../store/gameStore.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 import { ASSET_DEFINITIONS } from '../../data/assets.ts';
 import { formatCurrency, formatPercent } from '../../utils/format.ts';
+import { CONFIG } from '../../data/config.ts';
 import { PixelPanel } from '../ui/PixelPanel.tsx';
 import { PixelButton } from '../ui/PixelButton.tsx';
 import { PriceChange } from '../ui/PriceChange.tsx';
@@ -68,15 +69,9 @@ export function MarketScreen() {
     list.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
-        case 'price':
-          cmp = a.state.price - b.state.price;
-          break;
-        case 'change':
-          cmp = a.change - b.change;
-          break;
-        case 'volatility':
-          cmp = a.state.volatility - b.state.volatility;
-          break;
+        case 'price': cmp = a.state.price - b.state.price; break;
+        case 'change': cmp = a.change - b.change; break;
+        case 'volatility': cmp = a.state.volatility - b.state.volatility; break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -84,24 +79,18 @@ export function MarketScreen() {
     return list;
   }, [assets, classFilter, sortField, sortDir]);
 
-  const selectedDef = selectedAssetId
-    ? ASSET_DEFINITIONS.find((d) => d.id === selectedAssetId)
-    : null;
+  const selectedDef = selectedAssetId ? ASSET_DEFINITIONS.find((d) => d.id === selectedAssetId) : null;
   const selectedState = selectedAssetId ? assets[selectedAssetId] : null;
 
-  const vtFont: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
-  };
-
   const tabStyle = (active: boolean): CSSProperties => ({
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '7px',
-    padding: '6px 10px',
-    border: `2px solid ${active ? PALETTE.gold : PALETTE.panelLight}`,
-    backgroundColor: active ? PALETTE.gold : 'transparent',
-    color: active ? PALETTE.black : PALETTE.textDim,
+    fontFamily: FONT.ui,
+    fontSize: '12px',
+    fontWeight: active ? 600 : 400,
+    padding: '6px 14px',
+    border: `1px solid ${active ? PALETTE.accent : PALETTE.panelBorder}`,
+    borderRadius: '6px',
+    backgroundColor: active ? `${PALETTE.accent}18` : 'transparent',
+    color: active ? PALETTE.accent : PALETTE.textSecondary,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   });
@@ -109,20 +98,24 @@ export function MarketScreen() {
   const thStyle: CSSProperties = {
     padding: '8px 12px',
     textAlign: 'left',
-    borderBottom: `3px solid ${PALETTE.gold}`,
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '7px',
-    color: PALETTE.gold,
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    fontFamily: FONT.ui,
+    fontSize: '11px',
+    fontWeight: 600,
+    color: PALETTE.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
     whiteSpace: 'nowrap',
     cursor: 'pointer',
   };
 
   const tdStyle: CSSProperties = {
-    padding: '6px 12px',
-    borderBottom: `1px solid ${PALETTE.panelLight}`,
+    padding: '8px 12px',
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
     whiteSpace: 'nowrap',
-    ...vtFont,
-    fontSize: '18px',
+    fontFamily: FONT.mono,
+    fontSize: '13px',
+    color: PALETTE.text,
   };
 
   const sortArrow = (field: SortField) => {
@@ -132,16 +125,19 @@ export function MarketScreen() {
 
   const qty = parseInt(tradeQty, 10) || 0;
   const selectedPrice = selectedState?.price ?? 0;
-  const commission = selectedPrice * qty * 0.005;
+  const commission = selectedPrice * qty * CONFIG.BROKERAGE_COMMISSION_RATE;
   const totalBuyCost = selectedPrice * qty + commission;
   const canBuy = qty > 0 && totalBuyCost <= cash;
   const currentPosition = selectedAssetId ? positions[selectedAssetId] : undefined;
   const canSell = qty > 0 && currentPosition !== undefined && currentPosition.quantity >= qty;
 
+  const label: CSSProperties = { fontFamily: FONT.ui, fontSize: '12px', color: PALETTE.textSecondary };
+  const val: CSSProperties = { fontFamily: FONT.mono, fontSize: '13px', color: PALETTE.text };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {ASSET_CLASS_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -157,11 +153,7 @@ export function MarketScreen() {
       {/* Asset Table */}
       <PixelPanel title="Assets">
         <div style={{ overflowX: 'auto' }}>
-          <table style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            ...vtFont,
-          }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={thStyle}>Ticker</th>
@@ -188,36 +180,29 @@ export function MarketScreen() {
                     key={asset.def.id}
                     style={{
                       backgroundColor: isSelected
-                        ? PALETTE.panelLight
-                        : idx % 2 === 0 ? PALETTE.panel : PALETTE.bgLight,
+                        ? `${PALETTE.accent}12`
+                        : idx % 2 === 0 ? 'transparent' : `${PALETTE.bgLight}80`,
                       cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
+                      transition: 'background-color 0.1s ease',
                     }}
                     onClick={() => setSelectedAsset(isSelected ? null : asset.def.id)}
                   >
-                    <td style={{ ...tdStyle, color: PALETTE.gold }}>{asset.def.ticker}</td>
+                    <td style={{ ...tdStyle, color: PALETTE.accent, fontWeight: 600 }}>{asset.def.ticker}</td>
                     <td style={tdStyle}>{asset.def.name}</td>
-                    <td style={{ ...tdStyle, color: PALETTE.textDim, fontSize: '14px' }}>
+                    <td style={{ ...tdStyle, color: PALETTE.textSecondary, fontSize: '12px' }}>
                       {asset.def.class.replace('_', ' ')}
                     </td>
                     <td style={tdStyle}>{formatCurrency(asset.state.price)}</td>
                     <td style={tdStyle}>
-                      <PriceChange
-                        current={asset.state.price}
-                        previous={asset.state.previousPrice}
-                        format="percent"
-                      />
+                      <PriceChange current={asset.state.price} previous={asset.state.previousPrice} format="percent" />
                     </td>
                     <td style={tdStyle}>
                       {last30.length >= 2 && <SparkLine data={last30} width={80} height={20} />}
                     </td>
                     <td style={tdStyle}>
                       <span style={{
-                        color: asset.state.volatility > 0.5
-                          ? PALETTE.red
-                          : asset.state.volatility > 0.25
-                            ? PALETTE.gold
-                            : PALETTE.green,
+                        color: asset.state.volatility > 0.5 ? PALETTE.red
+                          : asset.state.volatility > 0.25 ? PALETTE.gold : PALETTE.green,
                       }}>
                         {formatPercent(asset.state.volatility)}
                       </span>
@@ -233,104 +218,71 @@ export function MarketScreen() {
       {/* Selected Asset Detail */}
       {selectedDef && selectedState && (
         <PixelPanel title={`${selectedDef.ticker} - ${selectedDef.name}`}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {/* Left: Chart + Price */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            {/* Left: Chart + Info */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                <span style={{ ...vtFont, fontSize: '32px' }}>
+                <span style={{ fontFamily: FONT.mono, fontSize: '26px', fontWeight: 700, color: PALETTE.text }}>
                   {formatCurrency(selectedState.price)}
                 </span>
-                <PriceChange
-                  current={selectedState.price}
-                  previous={selectedState.previousPrice}
-                  format="percent"
-                />
+                <PriceChange current={selectedState.price} previous={selectedState.previousPrice} format="percent" />
               </div>
-              <PriceChart
-                data={selectedState.priceHistory.slice(-90)}
-                width={380}
-                height={200}
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', ...vtFont, fontSize: '16px' }}>
+              <PriceChart data={selectedState.priceHistory.slice(-90)} width={380} height={200} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div><span style={label}>Annual Return: </span><span style={val}>{formatPercent(selectedDef.annualDrift)}</span></div>
+                <div><span style={label}>Volatility: </span><span style={val}>{formatPercent(selectedState.volatility)}</span></div>
                 <div>
-                  <span style={{ color: PALETTE.textDim }}>Annual Return: </span>
-                  <span>{formatPercent(selectedDef.annualDrift)}</span>
-                </div>
-                <div>
-                  <span style={{ color: PALETTE.textDim }}>Volatility: </span>
-                  <span>{formatPercent(selectedState.volatility)}</span>
-                </div>
-                <div>
-                  <span style={{ color: PALETTE.textDim }}>Regime: </span>
+                  <span style={label}>Regime: </span>
                   <span style={{
-                    color: selectedState.regime === 'bull'
-                      ? PALETTE.green
-                      : selectedState.regime === 'bear'
-                        ? PALETTE.red
-                        : PALETTE.gold,
+                    ...val,
+                    color: selectedState.regime === 'bull' ? PALETTE.green
+                      : selectedState.regime === 'bear' ? PALETTE.red : PALETTE.gold,
                   }}>
                     {selectedState.regime.toUpperCase()}
                   </span>
                 </div>
-                <div>
-                  <span style={{ color: PALETTE.textDim }}>Class: </span>
-                  <span>{selectedDef.class.replace('_', ' ')}</span>
-                </div>
+                <div><span style={label}>Class: </span><span style={val}>{selectedDef.class.replace('_', ' ')}</span></div>
               </div>
-              <div style={{ ...vtFont, fontSize: '16px', color: PALETTE.textDim }}>
-                {selectedDef.description}
-              </div>
+              <div style={{ ...label, fontSize: '13px', lineHeight: 1.5 }}>{selectedDef.description}</div>
             </div>
 
             {/* Right: Trade Panel */}
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              backgroundColor: PALETTE.bgLight,
-              border: `2px solid ${PALETTE.panelLight}`,
-              padding: '16px',
+              display: 'flex', flexDirection: 'column', gap: '12px',
+              backgroundColor: PALETTE.bgLight, border: `1px solid ${PALETTE.panelBorder}`,
+              borderRadius: '8px', padding: '16px',
             }}>
-              <div style={{
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: '9px',
-                color: PALETTE.gold,
-                marginBottom: '4px',
-              }}>
-                QUICK TRADE
+              <div style={{ fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600, color: PALETTE.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Quick Trade
               </div>
-              <div style={{ ...vtFont, fontSize: '16px' }}>
-                <span style={{ color: PALETTE.textDim }}>Your Position: </span>
-                <span>{currentPosition ? `${currentPosition.quantity} shares @ ${formatCurrency(currentPosition.averageCost)}` : 'None'}</span>
+              <div style={{ ...label, fontSize: '13px' }}>
+                <span>Your Position: </span>
+                <span style={{ color: PALETTE.text }}>
+                  {currentPosition ? `${currentPosition.quantity} shares @ ${formatCurrency(currentPosition.averageCost)}` : 'None'}
+                </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <label style={{ ...vtFont, fontSize: '16px', color: PALETTE.textDim }}>Qty:</label>
+                <span style={label}>Qty:</span>
                 <input
                   type="number"
                   min="1"
                   value={tradeQty}
                   onChange={(e) => setTradeQty(e.target.value)}
                   style={{
-                    width: '80px',
-                    padding: '4px 8px',
-                    backgroundColor: PALETTE.bg,
-                    color: PALETTE.text,
-                    border: `2px solid ${PALETTE.panelLight}`,
-                    fontFamily: "'VT323', monospace",
-                    fontSize: '18px',
+                    width: '80px', padding: '6px 8px',
+                    backgroundColor: PALETTE.bg, color: PALETTE.text,
+                    border: `1px solid ${PALETTE.panelBorder}`, borderRadius: '4px',
+                    fontFamily: FONT.mono, fontSize: '13px',
                   }}
                 />
                 {currentPosition && (
                   <button
                     type="button"
                     style={{
-                      ...vtFont,
-                      fontSize: '14px',
-                      color: PALETTE.cyan,
-                      background: 'none',
-                      border: `1px solid ${PALETTE.cyan}`,
-                      padding: '2px 6px',
-                      cursor: 'pointer',
+                      fontFamily: FONT.ui, fontSize: '11px', fontWeight: 500,
+                      color: PALETTE.cyan, background: 'none',
+                      border: `1px solid ${PALETTE.cyan}`, borderRadius: '4px',
+                      padding: '4px 8px', cursor: 'pointer',
                     }}
                     onClick={() => setTradeQty(String(currentPosition.quantity))}
                   >
@@ -338,33 +290,29 @@ export function MarketScreen() {
                   </button>
                 )}
               </div>
-              <div style={{ ...vtFont, fontSize: '14px', color: PALETTE.textDim }}>
-                <div>Price: {formatCurrency(selectedPrice)}</div>
-                <div>Commission: {formatCurrency(commission)}</div>
-                <div>Total Cost (Buy): {formatCurrency(totalBuyCost)}</div>
-                <div>Cash Available: {formatCurrency(cash)}</div>
+              <div style={{
+                ...label, fontSize: '12px',
+                backgroundColor: PALETTE.bg, borderRadius: '6px',
+                padding: '10px', border: `1px solid ${PALETTE.panelBorder}`,
+              }}>
+                <div>Price: <span style={{ color: PALETTE.text }}>{formatCurrency(selectedPrice)}</span></div>
+                <div>Commission: <span style={{ color: PALETTE.text }}>{formatCurrency(commission)}</span></div>
+                <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: '6px', marginTop: '6px' }}>
+                  Total Cost: <span style={{ color: PALETTE.gold, fontWeight: 600 }}>{formatCurrency(totalBuyCost)}</span>
+                </div>
+                <div style={{ marginTop: '4px' }}>Cash Available: <span style={{ color: PALETTE.text }}>{formatCurrency(cash)}</span></div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <PixelButton
                   variant={canBuy ? 'success' : 'disabled'}
-                  onClick={() => {
-                    if (canBuy) {
-                      executeBuy(selectedAssetId!, qty);
-                      setTradeQty('1');
-                    }
-                  }}
+                  onClick={() => { if (canBuy) { executeBuy(selectedAssetId!, qty); setTradeQty('1'); } }}
                   style={{ flex: 1 }}
                 >
                   BUY
                 </PixelButton>
                 <PixelButton
                   variant={canSell ? 'error' : 'disabled'}
-                  onClick={() => {
-                    if (canSell) {
-                      executeSell(selectedAssetId!, qty);
-                      setTradeQty('1');
-                    }
-                  }}
+                  onClick={() => { if (canSell) { executeSell(selectedAssetId!, qty); setTradeQty('1'); } }}
                   style={{ flex: 1 }}
                 >
                   SELL

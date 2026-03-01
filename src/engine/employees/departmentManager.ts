@@ -6,6 +6,7 @@ import type {
   GameState,
   PersonalityTrait,
 } from '../../types';
+import type { RNG } from '../../utils/random';
 import { CONFIG } from '../../data/config';
 import { TRAIT_COMPATIBILITY, TRAIT_EFFECTS } from '../../data/employees';
 
@@ -133,7 +134,7 @@ export function calculateDepartmentOutput(
  *
  * Returns a partial GameState with updated employees, departments, and statistics.
  */
-export function tickEmployees(state: GameState): Partial<GameState> {
+export function tickEmployees(state: GameState, rng?: RNG): Partial<GameState> {
   const employees = { ...state.employees };
   const departments = { ...state.departments };
   const statistics = { ...state.statistics };
@@ -158,8 +159,12 @@ export function tickEmployees(state: GameState): Partial<GameState> {
         emp.experience = 0;
         emp.salary = CONFIG.SALARY_BY_LEVEL[newLevel];
 
-        // Increase 2 random stats by 1
-        const shuffled = [...STAT_KEYS].sort(() => Math.random() - 0.5);
+        // Increase 2 random stats by 1 (Fisher-Yates shuffle with seeded RNG)
+        const shuffled = [...STAT_KEYS];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor((rng ? rng.next() : Math.random()) * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
         const stat1 = shuffled[0];
         const stat2 = shuffled[1];
         emp.stats = { ...emp.stats };

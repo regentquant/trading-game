@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface StatBarProps {
   value: number;
@@ -29,18 +29,16 @@ export function StatBar({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontFamily: "'VT323', monospace",
-    fontSize: '18px',
-    color: PALETTE.text,
+    fontFamily: FONT.ui,
+    fontSize: '12px',
+    color: PALETTE.textSecondary,
   };
 
   const barOuterStyle: CSSProperties = {
     width: '100%',
-    height: '16px',
+    height: '6px',
     backgroundColor: PALETTE.bgLight,
-    border: `2px solid ${PALETTE.textDim}`,
-    imageRendering: 'pixelated',
-    position: 'relative',
+    borderRadius: '3px',
     overflow: 'hidden',
   };
 
@@ -48,8 +46,8 @@ export function StatBar({
     width: `${pct}%`,
     height: '100%',
     backgroundColor: color,
+    borderRadius: '3px',
     transition: 'width 0.3s ease',
-    imageRendering: 'pixelated',
   };
 
   return (
@@ -57,7 +55,7 @@ export function StatBar({
       <div style={labelRowStyle}>
         <span>{label}</span>
         {showValue && (
-          <span style={{ color }}>
+          <span style={{ fontFamily: FONT.mono, fontSize: '12px', color }}>
             {Math.round(value)}/{maxValue}
           </span>
         )}

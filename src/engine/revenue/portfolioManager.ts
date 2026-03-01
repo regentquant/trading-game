@@ -25,8 +25,12 @@ export interface PositionSummary {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
+/** Counter-based trade ID generation to avoid non-seeded Math.random(). */
+let tradeIdCounter = 0;
+
 function makeTradeId(): string {
-  return `trade_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  tradeIdCounter += 1;
+  return `trade_${Date.now()}_${tradeIdCounter}`;
 }
 
 // ─── Trade Execution ────────────────────────────────────────────────────
@@ -297,7 +301,7 @@ export function getPositionSummaries(
     const pnl = (currentPrice - position.averageCost) * position.quantity;
     const pnlPercent =
       position.averageCost > 0
-        ? ((currentPrice - position.averageCost) / position.averageCost) * 100
+        ? (currentPrice - position.averageCost) / position.averageCost
         : 0;
 
     summaries.push({

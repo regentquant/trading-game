@@ -1,4 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface PixelButtonProps {
   onClick?: () => void;
@@ -8,12 +9,12 @@ interface PixelButtonProps {
   className?: string;
 }
 
-const variantClassMap: Record<string, string> = {
-  primary: 'is-primary',
-  success: 'is-success',
-  warning: 'is-warning',
-  error: 'is-error',
-  disabled: 'is-disabled',
+const variantStyles: Record<string, { bg: string; border: string; color: string; hoverBg: string }> = {
+  primary: { bg: PALETTE.accent, border: PALETTE.accent, color: PALETTE.white, hoverBg: PALETTE.accentDim },
+  success: { bg: PALETTE.green, border: PALETTE.green, color: PALETTE.black, hoverBg: PALETTE.greenDim },
+  warning: { bg: PALETTE.gold, border: PALETTE.gold, color: PALETTE.black, hoverBg: PALETTE.goldDim },
+  error: { bg: PALETTE.red, border: PALETTE.red, color: PALETTE.white, hoverBg: PALETTE.redDim },
+  disabled: { bg: PALETTE.panelLight, border: PALETTE.panelBorder, color: PALETTE.textDim, hoverBg: PALETTE.panelLight },
 };
 
 export function PixelButton({
@@ -23,29 +24,45 @@ export function PixelButton({
   style,
   className = '',
 }: PixelButtonProps) {
-  const variantClass = variantClassMap[variant] ?? '';
+  const vs = variantStyles[variant] ?? variantStyles.primary;
 
   const buttonStyle: CSSProperties = {
-    transition: 'transform 0.1s ease',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '8px 16px',
+    backgroundColor: vs.bg,
+    border: `1px solid ${vs.border}`,
+    borderRadius: '6px',
+    color: vs.color,
+    fontFamily: FONT.ui,
+    fontSize: '12px',
+    fontWeight: 600,
+    letterSpacing: '0.02em',
     cursor: variant === 'disabled' ? 'not-allowed' : 'pointer',
-    fontSize: '10px',
+    opacity: variant === 'disabled' ? 0.5 : 1,
+    transition: 'all 0.15s ease',
+    whiteSpace: 'nowrap',
     ...style,
   };
 
   return (
     <button
       type="button"
-      className={`nes-btn ${variantClass} ${className}`.trim()}
+      className={className}
       style={buttonStyle}
       onClick={variant === 'disabled' ? undefined : onClick}
       disabled={variant === 'disabled'}
       onMouseEnter={(e) => {
         if (variant !== 'disabled') {
-          (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)';
+          (e.currentTarget as HTMLElement).style.backgroundColor = vs.hoverBg;
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
         }
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+        (e.currentTarget as HTMLElement).style.backgroundColor = vs.bg;
+        (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
       }}
     >
       {children}

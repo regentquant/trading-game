@@ -189,6 +189,8 @@ export function tickMarket(
         updatedShocks.push({ ...shock, magnitude: decayedMagnitude });
       }
     }
+    // Clamp total shock contribution to prevent unrealistic price moves
+    shockContribution = clamp(shockContribution, -0.3, 0.3);
     logReturn += shockContribution;
 
     // --- Compute new price ---

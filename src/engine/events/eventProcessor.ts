@@ -163,7 +163,7 @@ function applyMarketShock(
   if (!target) return;
 
   const magnitude = effect.value;
-  const decayRate = effect.duration
+  const decayRate = (effect.duration && effect.duration > 0)
     ? 1 / effect.duration // duration in days => decay per day
     : DEFAULT_SHOCK_DECAY_RATE;
 

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useGameStore } from '../../store/gameStore.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface NavItem {
   id: string;
@@ -26,7 +26,7 @@ export function Navigation() {
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
-    padding: '8px 0',
+    padding: '8px',
     width: '100%',
   };
 
@@ -39,16 +39,19 @@ export function Navigation() {
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          padding: '10px 14px',
+          padding: '10px 12px',
           cursor: 'pointer',
-          backgroundColor: isActive ? PALETTE.blue : 'transparent',
-          color: isActive ? PALETTE.white : PALETTE.textDim,
-          fontFamily: "'VT323', monospace",
-          fontSize: '20px',
+          backgroundColor: isActive ? `${PALETTE.accent}18` : 'transparent',
+          color: isActive ? PALETTE.text : PALETTE.textSecondary,
+          fontFamily: FONT.ui,
+          fontSize: '13px',
+          fontWeight: isActive ? 600 : 400,
           border: 'none',
+          borderRadius: '6px',
           textAlign: 'left',
           width: '100%',
-          transition: 'background-color 0.15s ease, color 0.15s ease',
+          transition: 'all 0.15s ease',
+          borderLeft: isActive ? `2px solid ${PALETTE.accent}` : '2px solid transparent',
         };
 
         return (
@@ -59,18 +62,18 @@ export function Navigation() {
             onClick={() => setActiveScreen(item.id)}
             onMouseEnter={(e) => {
               if (!isActive) {
-                (e.currentTarget as HTMLElement).style.backgroundColor = PALETTE.panelLight;
+                (e.currentTarget as HTMLElement).style.backgroundColor = `${PALETTE.panelLight}80`;
                 (e.currentTarget as HTMLElement).style.color = PALETTE.text;
               }
             }}
             onMouseLeave={(e) => {
               if (!isActive) {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = PALETTE.textDim;
+                (e.currentTarget as HTMLElement).style.color = PALETTE.textSecondary;
               }
             }}
           >
-            <span style={{ fontSize: '22px', lineHeight: 1 }}>{item.icon}</span>
+            <span style={{ fontSize: '16px', lineHeight: 1, opacity: isActive ? 1 : 0.7 }}>{item.icon}</span>
             <span>{item.label}</span>
           </button>
         );

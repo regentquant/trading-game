@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from 'react';
 import { useGameStore } from '../../store/gameStore.ts';
 import { ASSET_DEFINITIONS } from '../../data/assets.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 export function Ticker() {
   const assets = useGameStore((s) => s.market.assets);
@@ -21,16 +21,14 @@ export function Ticker() {
     }).filter(Boolean) as { ticker: string; price: number; change: number }[];
   }, [assets]);
 
-  // Duplicate items for seamless loop
   const allItems = [...tickerItems, ...tickerItems];
 
   const wrapperStyle: CSSProperties = {
     overflow: 'hidden',
     width: '100%',
-    backgroundColor: PALETTE.bgLight,
-    borderTop: `2px solid ${PALETTE.panelLight}`,
-    borderBottom: `2px solid ${PALETTE.panelLight}`,
-    height: '28px',
+    backgroundColor: PALETTE.bg,
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    height: '32px',
     display: 'flex',
     alignItems: 'center',
   };
@@ -41,8 +39,8 @@ export function Ticker() {
     gap: '24px',
     whiteSpace: 'nowrap',
     animation: `tickerScroll ${tickerItems.length * 3}s linear infinite`,
-    fontFamily: "'VT323', monospace",
-    fontSize: '18px',
+    fontFamily: FONT.mono,
+    fontSize: '12px',
   };
 
   const formatPrice = (price: number): string => {
@@ -68,9 +66,9 @@ export function Ticker() {
             const pct = (item.change * 100).toFixed(2);
             return (
               <span key={idx} style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
-                <span style={{ color: PALETTE.gold, fontWeight: 'bold' }}>{item.ticker}</span>
+                <span style={{ color: PALETTE.textSecondary, fontWeight: 500 }}>{item.ticker}</span>
                 <span style={{ color: PALETTE.text }}>{formatPrice(item.price)}</span>
-                <span style={{ color }}>
+                <span style={{ color, fontSize: '11px' }}>
                   {arrow} {isUp ? '+' : ''}{pct}%
                 </span>
               </span>

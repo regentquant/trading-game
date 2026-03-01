@@ -324,7 +324,7 @@ export const useGameStore = create<GameStore>()(
             departments: { ...s.departments },
             statistics: { ...s.statistics },
           };
-          const empResult = tickEmployees(empReadState);
+          const empResult = tickEmployees(empReadState, rng);
           if (empResult.employees) {
             s.employees = empResult.employees;
           }
@@ -417,7 +417,7 @@ export const useGameStore = create<GameStore>()(
             // Bankruptcy check: if cash < 0 for 3 consecutive months, game over
             if (s.company.cash < 0) {
               s.company.consecutiveNegativeCashMonths += 1;
-              if (s.company.consecutiveNegativeCashMonths >= CONFIG.BANKRUPTCY_MONTHS) {
+              if (s.company.consecutiveNegativeCashMonths > CONFIG.BANKRUPTCY_MONTHS) {
                 s.company.gameOver = true;
                 s.time.isPaused = true;
               }
@@ -460,8 +460,8 @@ export const useGameStore = create<GameStore>()(
             try {
               const snapshot = get();
               setTimeout(() => saveToLocalStorage(snapshot as GameState), 0);
-            } catch {
-              // Silently fail autosave
+            } catch (error) {
+              console.warn('Autosave failed:', error);
             }
           }
         });
@@ -561,6 +561,10 @@ export const useGameStore = create<GameStore>()(
 
           // Calculate firing cost
           const cost = calculateFiringCost(employee);
+
+          // Check if player can afford the firing cost
+          if (s.company.cash < cost.total) return;
+
           s.company.cash -= cost.total;
 
           // Remove from department
@@ -648,7 +652,29 @@ export const useGameStore = create<GameStore>()(
       // ─── Events ──────────────────────────────────────────
       resolveEvent(eventId: string, choiceIndex: number) {
         set((s) => {
-          const state = get() as GameState;
+          // Validate choiceIndex before proceeding
+          const activeEvt = s.events.active.find((e) => e.id === eventId && !e.resolved);
+          if (!activeEvt) return;
+          const tmpl = EVENT_TEMPLATES.find((t) => t.id === activeEvt.templateId);
+          if (!tmpl || choiceIndex < 0 || choiceIndex >= tmpl.choices.length) return;
+
+          // Build a read-only snapshot from the immer draft instead of get()
+          // to avoid stale state issues
+          const state: GameState = {
+            meta: { ...s.meta },
+            time: { ...s.time },
+            company: { ...s.company },
+            market: { assets: { ...s.market.assets }, globalRegime: s.market.globalRegime, regimeDaysRemaining: s.market.regimeDaysRemaining, correlationMatrix: s.market.correlationMatrix, storytellerMode: s.market.storytellerMode },
+            employees: { ...s.employees },
+            departments: { ...s.departments },
+            hiringPool: { ...s.hiringPool },
+            revenueStreams: { ...s.revenueStreams },
+            portfolio: { ...s.portfolio },
+            events: { active: [...s.events.active], history: [...s.events.history], cooldowns: { ...s.events.cooldowns } },
+            upgrades: { ...s.upgrades },
+            statistics: { ...s.statistics },
+            ui: { ...s.ui },
+          };
           const result = resolvePlayerChoice(
             state,
             eventId,

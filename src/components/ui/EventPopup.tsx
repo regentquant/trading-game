@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { ActiveEvent, GameEventTemplate } from '../../types/index.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 import { PixelButton } from './PixelButton.tsx';
 
 interface EventPopupProps {
@@ -22,126 +22,125 @@ export function EventPopup({ event: _event, template, onChoice }: EventPopupProp
   const overlayStyle: CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backdropFilter: 'blur(4px)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    animation: 'popupFadeIn 0.3s ease-out',
+    animation: 'popupFadeIn 0.2s ease-out',
   };
 
   const boxStyle: CSSProperties = {
-    backgroundColor: PALETTE.bg,
+    backgroundColor: PALETTE.panel,
     color: PALETTE.text,
-    maxWidth: '640px',
+    maxWidth: '560px',
     width: '90%',
-    border: `4px solid ${severityColor}`,
-    boxShadow: `0 0 20px ${severityColor}40, inset 0 0 20px ${PALETTE.black}80`,
-    animation: 'popupSlideUp 0.3s ease-out',
+    borderRadius: '12px',
+    border: `1px solid ${severityColor}40`,
+    boxShadow: `0 0 40px ${severityColor}15, 0 24px 48px rgba(0,0,0,0.4)`,
+    animation: 'popupSlideUp 0.25s ease-out',
+    overflow: 'hidden',
   };
 
   const headerStyle: CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '12px',
+    padding: '16px 20px',
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    backgroundColor: PALETTE.bgLight,
   };
 
   const titleStyle: CSSProperties = {
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '12px',
-    color: PALETTE.gold,
+    fontFamily: FONT.ui,
+    fontSize: '16px',
+    fontWeight: 600,
+    color: PALETTE.text,
     margin: 0,
   };
 
   const badgeStyle: CSSProperties = {
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '8px',
+    fontFamily: FONT.ui,
+    fontSize: '10px',
+    fontWeight: 600,
     color: severityColor,
-    border: `2px solid ${severityColor}`,
-    padding: '4px 8px',
+    border: `1px solid ${severityColor}`,
+    borderRadius: '4px',
+    padding: '3px 8px',
     textTransform: 'uppercase',
+    letterSpacing: '0.04em',
   };
 
   const descStyle: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
-    lineHeight: 1.4,
-    marginBottom: '16px',
-    padding: '8px',
-    backgroundColor: PALETTE.bgLight,
-    border: `2px solid ${PALETTE.panelLight}`,
+    fontFamily: FONT.ui,
+    fontSize: '14px',
+    color: PALETTE.textSecondary,
+    lineHeight: 1.6,
+    padding: '16px 20px',
   };
 
   const choicesStyle: CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '8px',
+    padding: '0 20px 20px',
   };
 
   const choiceBoxStyle: CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
-    padding: '8px',
-    backgroundColor: PALETTE.panel,
-    border: `2px solid ${PALETTE.panelLight}`,
+    gap: '6px',
+    padding: '12px',
+    backgroundColor: PALETTE.bgLight,
+    border: `1px solid ${PALETTE.panelBorder}`,
+    borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'border-color 0.15s ease',
+    transition: 'border-color 0.15s ease, background-color 0.15s ease',
   };
 
   const choiceDescStyle: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '16px',
+    fontFamily: FONT.ui,
+    fontSize: '12px',
     color: PALETTE.textDim,
-    marginTop: '4px',
+    marginTop: '2px',
   };
 
   return (
-    <>
-      <style>{`
-        @keyframes popupFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes popupSlideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
-      <div style={overlayStyle}>
-        <div className="nes-container is-dark" style={boxStyle}>
-          <div style={headerStyle}>
-            <h3 style={titleStyle}>{template.name}</h3>
-            <span style={badgeStyle}>{template.severity}</span>
-          </div>
-          <div style={descStyle}>{template.description}</div>
-          <div style={choicesStyle}>
-            {template.choices.map((choice, idx) => (
-              <div
-                key={idx}
-                style={choiceBoxStyle}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = PALETTE.gold;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = PALETTE.panelLight;
-                }}
+    <div style={overlayStyle}>
+      <div style={boxStyle}>
+        <div style={headerStyle}>
+          <h3 style={titleStyle}>{template.name}</h3>
+          <span style={badgeStyle}>{template.severity}</span>
+        </div>
+        <div style={descStyle}>{template.description}</div>
+        <div style={choicesStyle}>
+          {template.choices.map((choice, idx) => (
+            <div
+              key={idx}
+              style={choiceBoxStyle}
+              onClick={() => onChoice(idx)}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = PALETTE.accent;
+                (e.currentTarget as HTMLElement).style.backgroundColor = PALETTE.panelLight;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = PALETTE.panelBorder;
+                (e.currentTarget as HTMLElement).style.backgroundColor = PALETTE.bgLight;
+              }}
+            >
+              <PixelButton
+                variant="primary"
+                onClick={() => onChoice(idx)}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
               >
-                <PixelButton
-                  variant="primary"
-                  onClick={() => onChoice(idx)}
-                  style={{ width: '100%', textAlign: 'left', fontSize: '8px' }}
-                >
-                  {choice.label}
-                </PixelButton>
-                <p style={choiceDescStyle}>{choice.description}</p>
-              </div>
-            ))}
-          </div>
+                {choice.label}
+              </PixelButton>
+              <p style={choiceDescStyle}>{choice.description}</p>
+            </div>
+          ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

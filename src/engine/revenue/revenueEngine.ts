@@ -262,7 +262,7 @@ function calcResearch(
   const avgAnalytics = getAverageStat(analysts, 'analytics');
 
   // Subscribers: base from level + quality-driven growth
-  const qualityFactor = avgAnalytics / 10; // 0.0 to 1.0
+  const qualityFactor = analysts.length > 0 ? avgAnalytics / 10 : 0; // 0.0 to 1.0
   const baseSubscribers = 50 + stream.level * 30;
   const qualitySubscribers = Math.floor(
     state.company.reputation * qualityFactor * 3,
@@ -297,7 +297,7 @@ function calcAssetManagement(
   const managementFeeRevenue = aum * (CONFIG.ASSET_MGMT_FEE / 12);
 
   // Monthly return: based on fund manager skill + market conditions
-  const skillBonus = (avgRiskMgmt + avgAnalytics) / 20; // 0.0 to 1.0
+  const skillBonus = fundManagers.length > 0 ? (avgRiskMgmt + avgAnalytics) / 20 : 0; // 0.0 to 1.0
   const regimeReturn =
     state.market.globalRegime === 'bull'
       ? 0.02

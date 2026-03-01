@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 
 interface PriceChangeProps {
   current: number;
@@ -35,16 +35,16 @@ export function PriceChange({
 
   const style: CSSProperties = {
     color,
-    fontFamily: "'VT323', monospace",
-    fontSize: '18px',
+    fontFamily: FONT.mono,
+    fontSize: '13px',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '3px',
   };
 
   return (
     <span style={style}>
-      {arrow && <span>{arrow}</span>}
+      {arrow && <span style={{ fontSize: '9px' }}>{arrow}</span>}
       <span>{display}</span>
     </span>
   );

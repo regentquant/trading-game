@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useGameStore } from '../../store/gameStore.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 import { formatCurrency } from '../../utils/format.ts';
 import { formatGameDate } from '../../utils/format.ts';
 import { Ticker } from '../ui/Ticker.tsx';
@@ -36,13 +36,8 @@ export function AppShell() {
   const activeEvents = useGameStore((s) => s.events.active);
   const historyEvents = useGameStore((s) => s.events.history);
 
-  // Recent events for bottom bar (last 3 from history)
   const recentEvents = historyEvents.slice(-3).reverse();
-
-  // Speed button helpers
   const speeds: (0 | 1 | 2 | 5)[] = [1, 2, 5];
-
-  // ─── Styles ──────────────────────────────────────────────
 
   const shellStyle: CSSProperties = {
     display: 'flex',
@@ -57,23 +52,25 @@ export function AppShell() {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '8px 16px',
+    padding: '10px 20px',
     backgroundColor: PALETTE.panel,
-    borderBottom: `2px solid ${PALETTE.panelLight}`,
-    minHeight: '48px',
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    minHeight: '52px',
     flexShrink: 0,
   };
 
   const companyNameStyle: CSSProperties = {
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '12px',
-    color: PALETTE.gold,
-    whiteSpace: 'nowrap',
+    fontFamily: FONT.ui,
+    fontSize: '15px',
+    fontWeight: 700,
+    color: PALETTE.text,
+    letterSpacing: '-0.01em',
   };
 
   const cashStyle: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '28px',
+    fontFamily: FONT.mono,
+    fontSize: '20px',
+    fontWeight: 600,
     color: PALETTE.green,
   };
 
@@ -84,25 +81,30 @@ export function AppShell() {
   };
 
   const dateStyle: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
+    fontFamily: FONT.mono,
+    fontSize: '13px',
+    color: PALETTE.textSecondary,
     whiteSpace: 'nowrap',
   };
 
   const speedBtnContainerStyle: CSSProperties = {
     display: 'flex',
-    gap: '4px',
+    gap: '2px',
     alignItems: 'center',
+    backgroundColor: PALETTE.bgLight,
+    borderRadius: '6px',
+    padding: '2px',
   };
 
   const speedBtnStyle = (active: boolean): CSSProperties => ({
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '8px',
-    padding: '4px 8px',
-    border: `2px solid ${active ? PALETTE.gold : PALETTE.panelLight}`,
-    backgroundColor: active ? PALETTE.gold : 'transparent',
-    color: active ? PALETTE.black : PALETTE.textDim,
+    fontFamily: FONT.mono,
+    fontSize: '11px',
+    fontWeight: 600,
+    padding: '4px 10px',
+    border: 'none',
+    borderRadius: '4px',
+    backgroundColor: active ? PALETTE.accent : 'transparent',
+    color: active ? PALETTE.white : PALETTE.textDim,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   });
@@ -117,28 +119,28 @@ export function AppShell() {
     width: '180px',
     flexShrink: 0,
     backgroundColor: PALETTE.panel,
-    borderRight: `2px solid ${PALETTE.panelLight}`,
+    borderRight: `1px solid ${PALETTE.panelBorder}`,
     overflowY: 'auto',
   };
 
   const mainStyle: CSSProperties = {
     flex: 1,
     overflowY: 'auto',
-    padding: '16px',
+    padding: '20px',
     backgroundColor: PALETTE.bg,
   };
 
   const bottomBarStyle: CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '6px 16px',
+    gap: '12px',
+    padding: '8px 20px',
     backgroundColor: PALETTE.panel,
-    borderTop: `2px solid ${PALETTE.panelLight}`,
+    borderTop: `1px solid ${PALETTE.panelBorder}`,
     minHeight: '36px',
     flexShrink: 0,
-    fontFamily: "'VT323', monospace",
-    fontSize: '16px',
+    fontFamily: FONT.ui,
+    fontSize: '12px',
     color: PALETTE.textDim,
     overflowX: 'auto',
   };
@@ -146,12 +148,14 @@ export function AppShell() {
   const eventBadgeStyle: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '2px 8px',
+    gap: '4px',
+    padding: '3px 10px',
     backgroundColor: PALETTE.bgLight,
-    border: `1px solid ${PALETTE.panelLight}`,
+    border: `1px solid ${PALETTE.panelBorder}`,
+    borderRadius: '4px',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+    fontSize: '12px',
     transition: 'border-color 0.15s ease',
   };
 
@@ -161,7 +165,7 @@ export function AppShell() {
 
   return (
     <div style={shellStyle}>
-      {/* ─── Top Bar ─── */}
+      {/* Top Bar */}
       <div style={topBarStyle}>
         <span style={companyNameStyle}>{companyName}</span>
         <span style={cashStyle}>{formatCurrency(cash)}</span>
@@ -189,23 +193,21 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* ─── Ticker ─── */}
+      {/* Ticker */}
       <Ticker />
 
-      {/* ─── Body ─── */}
+      {/* Body */}
       <div style={bodyStyle}>
-        {/* Sidebar */}
         <div style={sidebarStyle}>
           <Navigation />
         </div>
 
-        {/* Main Content */}
         <div style={mainStyle}>
           {ScreenComponent ? (
             <ScreenComponent />
           ) : (
             <div style={{
-              fontFamily: "'Press Start 2P', cursive",
+              fontFamily: FONT.ui,
               fontSize: '14px',
               color: PALETTE.textDim,
               display: 'flex',
@@ -219,10 +221,10 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* ─── Bottom Bar ─── */}
+      {/* Bottom Bar */}
       <div style={bottomBarStyle}>
         {unresolvedCount > 0 && (
-          <span style={{ color: PALETTE.red }}>
+          <span style={{ color: PALETTE.red, fontWeight: 500 }}>
             {unresolvedCount} event{unresolvedCount > 1 ? 's' : ''} pending!
           </span>
         )}

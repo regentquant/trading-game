@@ -7,11 +7,9 @@ import { NewsTicker } from './components/ui/NewsTicker.tsx';
 import { Modal } from './components/ui/Modal.tsx';
 import { PixelButton } from './components/ui/PixelButton.tsx';
 import { EVENT_TEMPLATES } from './data/events.ts';
-import { PALETTE } from './styles/palette.ts';
+import { PALETTE, FONT } from './styles/palette.ts';
 import { formatCurrency } from './utils/format.ts';
-import type { CSSProperties } from 'react';
 
-// ─── Tutorial content for each screen ────────────────────
 const TUTORIAL_CONTENT: Record<string, string> = {
   dashboard:
     'Welcome to the Dashboard! This is your command center. Monitor your cash, net worth, market conditions, and recent events at a glance.',
@@ -53,7 +51,6 @@ function App() {
   const [toasts, setToasts] = useState<{ id: string; text: string }[]>([]);
   const prevAchievementsRef = useRef<string[]>([]);
 
-  // Track achievement changes for toast notifications
   useEffect(() => {
     const prev = prevAchievementsRef.current;
     const newOnes = achievements.filter((a) => !prev.includes(a));
@@ -63,7 +60,6 @@ function App() {
         text: `Achievement Unlocked: ${getAchievementName(id)}`,
       }));
       setToasts((t) => [...t, ...newToasts]);
-      // Auto-remove toasts after 4 seconds
       for (const toast of newToasts) {
         setTimeout(() => {
           setToasts((t) => t.filter((tt) => tt.id !== toast.id));
@@ -73,23 +69,17 @@ function App() {
     prevAchievementsRef.current = [...achievements];
   }, [achievements]);
 
-  // CRT effect class management
   useEffect(() => {
     const root = document.getElementById('app');
     if (root) {
-      if (crtEnabled) {
-        root.classList.add('crt-active');
-      } else {
-        root.classList.remove('crt-active');
-      }
+      if (crtEnabled) root.classList.add('crt-active');
+      else root.classList.remove('crt-active');
     }
   }, [crtEnabled]);
 
-  // Tutorial check when screen changes
   useEffect(() => {
     if (!newGameModalShown) return;
     if (tutorialSeen[activeScreen]) return;
-
     const content = TUTORIAL_CONTENT[activeScreen];
     if (content) {
       setTutorialText(content);
@@ -105,22 +95,14 @@ function App() {
   useEffect(() => {
     if (loopStarted.current) return;
     loopStarted.current = true;
-
-    // Attempt to load a saved game
     const loaded = useGameStore.getState().loadGame();
     if (!loaded) {
-      // No save found -- show new game modal
-      console.log('No save found. Starting new game.');
       setShowNewGameModal(true);
     } else {
-      console.log('Save loaded successfully.');
-      // Mark as shown so tutorial system works
       if (!useGameStore.getState().ui.newGameModalShown) {
         useGameStore.getState().setNewGameModalShown();
       }
     }
-
-    // Start the game loop
     startGameLoop(useGameStore);
   }, []);
 
@@ -135,75 +117,47 @@ function App() {
     setShowNewGameModal(true);
   };
 
-  const vtFont: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
-  };
-
   return (
     <>
       <AppShell />
 
-      {/* News Ticker — non-blocking news display */}
       {!gameOver && !showNewGameModal && (
-        <NewsTicker
-          events={eventHistory}
-          templates={EVENT_TEMPLATES}
-          currentDay={currentDay}
-        />
+        <NewsTicker events={eventHistory} templates={EVENT_TEMPLATES} currentDay={currentDay} />
       )}
 
       {/* New Game Modal */}
       {showNewGameModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 2000,
-          }}
-        >
-          <div
-            className="nes-container is-dark with-title"
-            style={{
-              backgroundColor: PALETTE.panel,
-              color: PALETTE.text,
-              maxWidth: '500px',
-              width: '90%',
-            }}
-          >
-            <p
-              className="title"
-              style={{
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: '12px',
-                color: PALETTE.gold,
-              }}
-            >
-              New Game
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div
-                style={{
-                  fontFamily: "'Press Start 2P', cursive",
-                  fontSize: '14px',
-                  color: PALETTE.gold,
-                  textAlign: 'center',
-                }}
-              >
-                TRADING TYCOON
+        <div style={{
+          position: 'fixed', inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 2000,
+        }}>
+          <div style={{
+            backgroundColor: PALETTE.panel,
+            border: `1px solid ${PALETTE.panelBorder}`,
+            borderRadius: '16px',
+            color: PALETTE.text,
+            maxWidth: '460px', width: '90%',
+            padding: '32px',
+            boxShadow: '0 32px 64px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{
+                fontFamily: FONT.ui, fontSize: '24px', fontWeight: 700,
+                color: PALETTE.text, textAlign: 'center', letterSpacing: '-0.02em',
+              }}>
+                Trading Tycoon
               </div>
-              <p style={{ ...vtFont, textAlign: 'center', color: PALETTE.textDim }}>
+              <p style={{
+                fontFamily: FONT.ui, fontSize: '14px', color: PALETTE.textSecondary,
+                textAlign: 'center', lineHeight: 1.5,
+              }}>
                 Build your financial empire from a small startup to a global trading powerhouse.
               </p>
               <div>
-                <label
-                  style={{ ...vtFont, fontSize: '16px', color: PALETTE.textDim }}
-                >
+                <label style={{ fontFamily: FONT.ui, fontSize: '12px', color: PALETTE.textSecondary }}>
                   Company Name:
                 </label>
                 <input
@@ -212,40 +166,28 @@ function App() {
                   onChange={(e) => setNewCompanyName(e.target.value)}
                   placeholder="Trading Tycoon Inc."
                   maxLength={30}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleNewGame();
-                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleNewGame(); }}
                   style={{
-                    width: '100%',
-                    padding: '8px',
-                    backgroundColor: PALETTE.bg,
-                    color: PALETTE.text,
-                    border: `2px solid ${PALETTE.panelLight}`,
-                    fontFamily: "'VT323', monospace",
-                    fontSize: '22px',
-                    marginTop: '6px',
-                    boxSizing: 'border-box',
+                    width: '100%', padding: '10px 12px',
+                    backgroundColor: PALETTE.bg, color: PALETTE.text,
+                    border: `1px solid ${PALETTE.panelBorder}`,
+                    borderRadius: '8px', fontFamily: FONT.mono,
+                    fontSize: '15px', marginTop: '6px', boxSizing: 'border-box',
                   }}
                 />
               </div>
-              <div
-                style={{
-                  ...vtFont,
-                  fontSize: '14px',
-                  color: PALETTE.textDim,
-                  backgroundColor: PALETTE.bgLight,
-                  padding: '8px',
-                  border: `1px solid ${PALETTE.panelLight}`,
-                }}
-              >
-                You start with:
-                <br />
-                - $500,000 cash
-                <br />
-                - 1 Analyst + 1 Broker
-                <br />- Brokerage revenue stream active
+              <div style={{
+                fontFamily: FONT.ui, fontSize: '13px', color: PALETTE.textDim,
+                backgroundColor: PALETTE.bgLight, padding: '12px',
+                borderRadius: '8px', border: `1px solid ${PALETTE.panelBorder}`,
+                lineHeight: 1.6,
+              }}>
+                You start with:<br />
+                - $500,000 cash<br />
+                - 1 Analyst + 1 Broker<br />
+                - Brokerage revenue stream active
               </div>
-              <PixelButton variant="success" onClick={handleNewGame}>
+              <PixelButton variant="success" onClick={handleNewGame} style={{ width: '100%', padding: '12px' }}>
                 START GAME
               </PixelButton>
             </div>
@@ -253,57 +195,38 @@ function App() {
         </div>
       )}
 
-      {/* Game Over Screen */}
+      {/* Game Over */}
       {gameOver && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.92)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 3000,
-          }}
-        >
-          <div
-            className="nes-container is-dark with-title"
-            style={{
-              backgroundColor: PALETTE.panel,
-              color: PALETTE.text,
-              maxWidth: '500px',
-              width: '90%',
-              border: `4px solid ${PALETTE.red}`,
-              boxShadow: `0 0 30px ${PALETTE.red}60`,
-            }}
-          >
-            <p
-              className="title"
-              style={{
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: '12px',
-                color: PALETTE.red,
-              }}
-            >
-              BANKRUPTCY
-            </p>
+        <div style={{
+          position: 'fixed', inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 3000,
+        }}>
+          <div style={{
+            backgroundColor: PALETTE.panel,
+            border: `1px solid ${PALETTE.red}40`,
+            borderRadius: '16px',
+            color: PALETTE.text,
+            maxWidth: '460px', width: '90%',
+            padding: '32px',
+            boxShadow: `0 0 60px ${PALETTE.red}15, 0 32px 64px rgba(0,0,0,0.5)`,
+          }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: "'Press Start 2P', cursive",
-                  fontSize: '16px',
-                  color: PALETTE.red,
-                }}
-              >
+              <div style={{ fontFamily: FONT.ui, fontSize: '12px', fontWeight: 600, color: PALETTE.red, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Bankruptcy
+              </div>
+              <div style={{ fontFamily: FONT.ui, fontSize: '22px', fontWeight: 700, color: PALETTE.red }}>
                 GAME OVER
               </div>
-              <p style={vtFont}>
-                <span style={{ color: PALETTE.gold }}>{companyName}</span> has been insolvent for 3 consecutive months and is forced to close.
+              <p style={{ fontFamily: FONT.ui, fontSize: '14px', color: PALETTE.textSecondary, lineHeight: 1.5 }}>
+                <span style={{ color: PALETTE.accent, fontWeight: 500 }}>{companyName}</span> has been insolvent for 3 consecutive months and is forced to close.
               </p>
-              <div style={{ ...vtFont, color: PALETTE.textDim }}>
-                Final Cash: <span style={{ color: PALETTE.red }}>{formatCurrency(cash)}</span>
+              <div style={{ fontFamily: FONT.ui, fontSize: '13px', color: PALETTE.textDim }}>
+                Final Cash: <span style={{ color: PALETTE.red, fontFamily: FONT.mono }}>{formatCurrency(cash)}</span>
               </div>
-              <PixelButton variant="warning" onClick={handleRestart}>
+              <PixelButton variant="warning" onClick={handleRestart} style={{ width: '100%' }}>
                 START NEW GAME
               </PixelButton>
             </div>
@@ -311,38 +234,34 @@ function App() {
         </div>
       )}
 
-      {/* Tutorial Popup */}
-      <Modal
-        isOpen={showTutorial}
-        onClose={handleTutorialDismiss}
-        title={`${activeScreen.charAt(0).toUpperCase() + activeScreen.slice(1)} Guide`}
-      >
+      {/* Tutorial */}
+      <Modal isOpen={showTutorial} onClose={handleTutorialDismiss}
+        title={`${activeScreen.charAt(0).toUpperCase() + activeScreen.slice(1)} Guide`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={vtFont}>{tutorialText}</p>
+          <p style={{ fontFamily: FONT.ui, fontSize: '14px', color: PALETTE.text, lineHeight: 1.6 }}>{tutorialText}</p>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <PixelButton variant="primary" onClick={handleTutorialDismiss}>
-              GOT IT
-            </PixelButton>
+            <PixelButton variant="primary" onClick={handleTutorialDismiss}>GOT IT</PixelButton>
           </div>
         </div>
       </Modal>
 
-      {/* Achievement Toast Notifications */}
+      {/* Achievement Toasts */}
       {toasts.map((toast, idx) => (
         <div
           key={toast.id}
           style={{
             position: 'fixed',
-            top: `${80 + idx * 50}px`,
+            top: `${80 + idx * 56}px`,
             right: '20px',
             backgroundColor: PALETTE.gold,
             color: PALETTE.black,
-            padding: '10px 20px',
-            fontFamily: "'Press Start 2P', cursive",
-            fontSize: '8px',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            fontFamily: FONT.ui,
+            fontSize: '12px',
+            fontWeight: 600,
             zIndex: 5000,
-            border: `3px solid ${PALETTE.goldDark}`,
-            boxShadow: `4px 4px 0 ${PALETTE.black}`,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
             animation: 'popupSlideUp 0.3s ease-out',
             maxWidth: '320px',
           }}

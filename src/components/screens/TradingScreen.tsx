@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { useGameStore } from '../../store/gameStore.ts';
-import { PALETTE } from '../../styles/palette.ts';
+import { PALETTE, FONT } from '../../styles/palette.ts';
 import { ASSET_DEFINITIONS } from '../../data/assets.ts';
 import { formatCurrency, formatPercent, formatGameDate } from '../../utils/format.ts';
 import {
@@ -25,83 +25,56 @@ export function TradingScreen() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [tradeQty, setTradeQty] = useState<string>('1');
 
-  // Position summaries
-  const summaries = useMemo(
-    () => getPositionSummaries(portfolio, assets),
-    [portfolio, assets],
-  );
-
-  const totalValue = useMemo(
-    () => calculatePortfolioValue(portfolio, assets),
-    [portfolio, assets],
-  );
-
-  const totalUnrealized = useMemo(
-    () => calculateUnrealizedPnL(portfolio, assets),
-    [portfolio, assets],
-  );
-
+  const summaries = useMemo(() => getPositionSummaries(portfolio, assets), [portfolio, assets]);
+  const totalValue = useMemo(() => calculatePortfolioValue(portfolio, assets), [portfolio, assets]);
+  const totalUnrealized = useMemo(() => calculateUnrealizedPnL(portfolio, assets), [portfolio, assets]);
   const totalInvested = portfolio.totalInvested;
+  const recentTrades = useMemo(() => portfolio.tradeHistory.slice(-50).reverse(), [portfolio.tradeHistory]);
 
-  // Trade history (last 50)
-  const recentTrades = useMemo(
-    () => portfolio.tradeHistory.slice(-50).reverse(),
-    [portfolio.tradeHistory],
-  );
-
-  // Trade execution preview
   const selectedAssetState = assets[tradeAssetId];
   const tradePrice = selectedAssetState?.price ?? 0;
   const qty = parseInt(tradeQty, 10) || 0;
   const commission = tradePrice * qty * CONFIG.BROKERAGE_COMMISSION_RATE;
-  const totalCost = tradeType === 'buy'
-    ? tradePrice * qty + commission
-    : tradePrice * qty - commission;
+  const totalCost = tradeType === 'buy' ? tradePrice * qty + commission : tradePrice * qty - commission;
   const currentPosition = portfolio.positions[tradeAssetId];
   const canExecute = tradeType === 'buy'
     ? qty > 0 && totalCost <= cash
     : qty > 0 && currentPosition !== undefined && currentPosition.quantity >= qty;
 
-  // P&L Summary
   const bestTrade = statistics.totalProfitEarned;
   const worstTrade = statistics.totalLossIncurred;
 
-  const vtFont: CSSProperties = {
-    fontFamily: "'VT323', monospace",
-    fontSize: '20px',
-    color: PALETTE.text,
+  const label: CSSProperties = { fontFamily: FONT.ui, fontSize: '12px', color: PALETTE.textSecondary };
+  const val: CSSProperties = { fontFamily: FONT.mono, fontSize: '13px', color: PALETTE.text };
+
+  const thStyle: CSSProperties = {
+    padding: '8px 12px', textAlign: 'left',
+    borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600,
+    color: PALETTE.textSecondary, textTransform: 'uppercase',
+    letterSpacing: '0.04em', whiteSpace: 'nowrap',
   };
 
   const tdStyle: CSSProperties = {
-    padding: '6px 12px',
-    borderBottom: `1px solid ${PALETTE.panelLight}`,
-    whiteSpace: 'nowrap',
-    ...vtFont,
-    fontSize: '16px',
+    padding: '8px 12px', borderBottom: `1px solid ${PALETTE.panelBorder}`,
+    whiteSpace: 'nowrap', fontFamily: FONT.mono, fontSize: '13px', color: PALETTE.text,
   };
 
-  const thStyle: CSSProperties = {
-    padding: '8px 12px',
-    textAlign: 'left',
-    borderBottom: `3px solid ${PALETTE.gold}`,
-    fontFamily: "'Press Start 2P', cursive",
-    fontSize: '7px',
-    color: PALETTE.gold,
-    whiteSpace: 'nowrap',
-  };
+  const getAssetTicker = (id: string) => ASSET_DEFINITIONS.find((d) => d.id === id)?.ticker ?? id;
 
-  const getAssetTicker = (id: string) => {
-    const def = ASSET_DEFINITIONS.find((d) => d.id === id);
-    return def?.ticker ?? id;
+  const inputStyle: CSSProperties = {
+    padding: '8px 10px', backgroundColor: PALETTE.bg, color: PALETTE.text,
+    border: `1px solid ${PALETTE.panelBorder}`, borderRadius: '6px',
+    fontFamily: FONT.mono, fontSize: '13px',
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Row 1: Portfolio Positions + Trade Panel */}
+      {/* Row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
         <PixelPanel title="Portfolio Positions">
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', ...vtFont }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={thStyle}>Asset</th>
@@ -117,50 +90,25 @@ export function TradingScreen() {
                 {summaries.length > 0 ? (
                   <>
                     {summaries.map((s) => {
-                      const allocation = totalValue > 0
-                        ? (s.currentPrice * s.quantity / totalValue) * 100
-                        : 0;
+                      const allocation = totalValue > 0 ? (s.currentPrice * s.quantity / totalValue) * 100 : 0;
                       return (
-                        <tr
-                          key={s.assetId}
-                          style={{
-                            backgroundColor: PALETTE.panel,
-                            transition: 'background-color 0.15s ease',
-                          }}
-                        >
-                          <td style={{ ...tdStyle, color: PALETTE.gold }}>{getAssetTicker(s.assetId)}</td>
+                        <tr key={s.assetId} style={{ transition: 'background-color 0.1s ease' }}>
+                          <td style={{ ...tdStyle, color: PALETTE.accent, fontWeight: 600 }}>{getAssetTicker(s.assetId)}</td>
                           <td style={tdStyle}>{s.quantity}</td>
                           <td style={tdStyle}>{formatCurrency(s.avgCost)}</td>
                           <td style={tdStyle}>{formatCurrency(s.currentPrice)}</td>
-                          <td style={{
-                            ...tdStyle,
-                            color: s.pnl >= 0 ? PALETTE.green : PALETTE.red,
-                          }}>
-                            {formatCurrency(s.pnl)}
-                          </td>
-                          <td style={{
-                            ...tdStyle,
-                            color: s.pnlPercent >= 0 ? PALETTE.green : PALETTE.red,
-                          }}>
-                            {formatPercent(s.pnlPercent / 100)}
-                          </td>
+                          <td style={{ ...tdStyle, color: s.pnl >= 0 ? PALETTE.green : PALETTE.red }}>{formatCurrency(s.pnl)}</td>
+                          <td style={{ ...tdStyle, color: s.pnlPercent >= 0 ? PALETTE.green : PALETTE.red }}>{formatPercent(s.pnlPercent)}</td>
                           <td style={tdStyle}>{allocation.toFixed(1)}%</td>
                         </tr>
                       );
                     })}
-                    {/* Totals Row */}
                     <tr style={{ backgroundColor: PALETTE.bgLight }}>
-                      <td style={{ ...tdStyle, fontWeight: 'bold', color: PALETTE.gold }}>TOTAL</td>
+                      <td style={{ ...tdStyle, fontWeight: 600, color: PALETTE.accent }}>TOTAL</td>
                       <td style={tdStyle}>-</td>
                       <td style={tdStyle}>{formatCurrency(totalInvested)}</td>
                       <td style={tdStyle}>{formatCurrency(totalValue)}</td>
-                      <td style={{
-                        ...tdStyle,
-                        color: totalUnrealized >= 0 ? PALETTE.green : PALETTE.red,
-                        fontWeight: 'bold',
-                      }}>
-                        {formatCurrency(totalUnrealized)}
-                      </td>
+                      <td style={{ ...tdStyle, color: totalUnrealized >= 0 ? PALETTE.green : PALETTE.red, fontWeight: 600 }}>{formatCurrency(totalUnrealized)}</td>
                       <td style={tdStyle}>-</td>
                       <td style={tdStyle}>100%</td>
                     </tr>
@@ -177,48 +125,33 @@ export function TradingScreen() {
           </div>
         </PixelPanel>
 
-        {/* Trade Execution Panel */}
+        {/* Trade Execution */}
         <PixelPanel title="Execute Trade">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Asset Selector */}
             <div>
-              <label style={{ ...vtFont, fontSize: '14px', color: PALETTE.textDim }}>Asset:</label>
+              <label style={label}>Asset:</label>
               <select
                 value={tradeAssetId}
                 onChange={(e) => setTradeAssetId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  backgroundColor: PALETTE.bg,
-                  color: PALETTE.text,
-                  border: `2px solid ${PALETTE.panelLight}`,
-                  fontFamily: "'VT323', monospace",
-                  fontSize: '16px',
-                  marginTop: '4px',
-                }}
+                style={{ ...inputStyle, width: '100%', marginTop: '4px' }}
               >
                 {ASSET_DEFINITIONS.map((def) => (
-                  <option key={def.id} value={def.id}>
-                    {def.ticker} - {def.name}
-                  </option>
+                  <option key={def.id} value={def.id}>{def.ticker} - {def.name}</option>
                 ))}
               </select>
             </div>
 
             {/* Buy/Sell Toggle */}
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', gap: '2px', backgroundColor: PALETTE.bgLight, borderRadius: '6px', padding: '2px' }}>
               <button
                 type="button"
                 onClick={() => setTradeType('buy')}
                 style={{
-                  flex: 1,
-                  padding: '8px',
+                  flex: 1, padding: '8px', borderRadius: '4px', border: 'none',
                   backgroundColor: tradeType === 'buy' ? PALETTE.green : 'transparent',
-                  color: tradeType === 'buy' ? PALETTE.black : PALETTE.textDim,
-                  border: `2px solid ${tradeType === 'buy' ? PALETTE.green : PALETTE.panelLight}`,
-                  fontFamily: "'Press Start 2P', cursive",
-                  fontSize: '9px',
-                  cursor: 'pointer',
+                  color: tradeType === 'buy' ? PALETTE.black : PALETTE.textSecondary,
+                  fontFamily: FONT.ui, fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 BUY
@@ -227,50 +160,33 @@ export function TradingScreen() {
                 type="button"
                 onClick={() => setTradeType('sell')}
                 style={{
-                  flex: 1,
-                  padding: '8px',
+                  flex: 1, padding: '8px', borderRadius: '4px', border: 'none',
                   backgroundColor: tradeType === 'sell' ? PALETTE.red : 'transparent',
-                  color: tradeType === 'sell' ? PALETTE.white : PALETTE.textDim,
-                  border: `2px solid ${tradeType === 'sell' ? PALETTE.red : PALETTE.panelLight}`,
-                  fontFamily: "'Press Start 2P', cursive",
-                  fontSize: '9px',
-                  cursor: 'pointer',
+                  color: tradeType === 'sell' ? PALETTE.white : PALETTE.textSecondary,
+                  fontFamily: FONT.ui, fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 SELL
               </button>
             </div>
 
-            {/* Quantity Input */}
             <div>
-              <label style={{ ...vtFont, fontSize: '14px', color: PALETTE.textDim }}>Quantity:</label>
+              <label style={label}>Quantity:</label>
               <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
                 <input
-                  type="number"
-                  min="1"
-                  value={tradeQty}
+                  type="number" min="1" value={tradeQty}
                   onChange={(e) => setTradeQty(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '6px',
-                    backgroundColor: PALETTE.bg,
-                    color: PALETTE.text,
-                    border: `2px solid ${PALETTE.panelLight}`,
-                    fontFamily: "'VT323', monospace",
-                    fontSize: '18px',
-                  }}
+                  style={{ ...inputStyle, flex: 1 }}
                 />
                 {tradeType === 'sell' && currentPosition && (
                   <button
                     type="button"
                     style={{
-                      padding: '4px 8px',
-                      backgroundColor: PALETTE.bgLight,
-                      color: PALETTE.cyan,
-                      border: `1px solid ${PALETTE.cyan}`,
-                      fontFamily: "'VT323', monospace",
-                      fontSize: '14px',
-                      cursor: 'pointer',
+                      padding: '6px 10px', backgroundColor: 'transparent',
+                      color: PALETTE.cyan, border: `1px solid ${PALETTE.cyan}`,
+                      borderRadius: '4px', fontFamily: FONT.ui, fontSize: '11px',
+                      fontWeight: 500, cursor: 'pointer',
                     }}
                     onClick={() => setTradeQty(String(currentPosition.quantity))}
                   >
@@ -282,36 +198,24 @@ export function TradingScreen() {
 
             {/* Preview */}
             <div style={{
-              backgroundColor: PALETTE.bg,
-              border: `2px solid ${PALETTE.panelLight}`,
-              padding: '8px',
-              ...vtFont,
-              fontSize: '14px',
+              backgroundColor: PALETTE.bg, border: `1px solid ${PALETTE.panelBorder}`,
+              borderRadius: '6px', padding: '10px', ...label, fontSize: '12px',
             }}>
-              <div><span style={{ color: PALETTE.textDim }}>Price: </span>{formatCurrency(tradePrice)}</div>
-              <div><span style={{ color: PALETTE.textDim }}>Commission: </span>{formatCurrency(commission)}</div>
-              <div style={{ borderTop: `1px solid ${PALETTE.panelLight}`, paddingTop: '4px', marginTop: '4px' }}>
-                <span style={{ color: PALETTE.textDim }}>{tradeType === 'buy' ? 'Total Cost' : 'Total Revenue'}: </span>
-                <span style={{ color: PALETTE.gold }}>{formatCurrency(totalCost)}</span>
+              <div>Price: <span style={{ color: PALETTE.text }}>{formatCurrency(tradePrice)}</span></div>
+              <div>Commission: <span style={{ color: PALETTE.text }}>{formatCurrency(commission)}</span></div>
+              <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: '6px', marginTop: '6px' }}>
+                {tradeType === 'buy' ? 'Total Cost' : 'Total Revenue'}:{' '}
+                <span style={{ color: PALETTE.gold, fontWeight: 600 }}>{formatCurrency(totalCost)}</span>
               </div>
-              {currentPosition && (
-                <div style={{ marginTop: '4px' }}>
-                  <span style={{ color: PALETTE.textDim }}>Held: </span>
-                  {currentPosition.quantity} shares
-                </div>
-              )}
+              {currentPosition && <div style={{ marginTop: '4px' }}>Held: <span style={{ color: PALETTE.text }}>{currentPosition.quantity} shares</span></div>}
             </div>
 
-            {/* Execute Button */}
             <PixelButton
               variant={canExecute ? (tradeType === 'buy' ? 'success' : 'error') : 'disabled'}
               onClick={() => {
                 if (!canExecute) return;
-                if (tradeType === 'buy') {
-                  executeBuy(tradeAssetId, qty);
-                } else {
-                  executeSell(tradeAssetId, qty);
-                }
+                if (tradeType === 'buy') executeBuy(tradeAssetId, qty);
+                else executeSell(tradeAssetId, qty);
                 setTradeQty('1');
               }}
             >
@@ -321,11 +225,11 @@ export function TradingScreen() {
         </PixelPanel>
       </div>
 
-      {/* Row 2: Trade History + P&L Summary */}
+      {/* Row 2 */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
         <PixelPanel title="Trade History">
           <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', ...vtFont }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={thStyle}>Date</th>
@@ -339,22 +243,10 @@ export function TradingScreen() {
               <tbody>
                 {recentTrades.length > 0 ? (
                   recentTrades.map((trade, idx) => (
-                    <tr
-                      key={trade.id}
-                      style={{
-                        backgroundColor: idx % 2 === 0 ? PALETTE.panel : PALETTE.bgLight,
-                      }}
-                    >
-                      <td style={{ ...tdStyle, fontSize: '14px' }}>
-                        {formatGameDate(trade.executedOnDay)}
-                      </td>
-                      <td style={{ ...tdStyle, color: PALETTE.gold }}>{getAssetTicker(trade.assetId)}</td>
-                      <td style={{
-                        ...tdStyle,
-                        color: trade.type === 'buy' ? PALETTE.green : PALETTE.red,
-                      }}>
-                        {trade.type.toUpperCase()}
-                      </td>
+                    <tr key={trade.id} style={{ backgroundColor: idx % 2 === 0 ? 'transparent' : `${PALETTE.bgLight}80` }}>
+                      <td style={{ ...tdStyle, fontSize: '12px', color: PALETTE.textSecondary }}>{formatGameDate(trade.executedOnDay)}</td>
+                      <td style={{ ...tdStyle, color: PALETTE.accent, fontWeight: 500 }}>{getAssetTicker(trade.assetId)}</td>
+                      <td style={{ ...tdStyle, color: trade.type === 'buy' ? PALETTE.green : PALETTE.red }}>{trade.type.toUpperCase()}</td>
                       <td style={tdStyle}>{trade.quantity}</td>
                       <td style={tdStyle}>{formatCurrency(trade.price)}</td>
                       <td style={tdStyle}>{formatCurrency(trade.quantity * trade.price)}</td>
@@ -362,9 +254,7 @@ export function TradingScreen() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ ...tdStyle, color: PALETTE.textDim, textAlign: 'center' }}>
-                      No trades yet.
-                    </td>
+                    <td colSpan={6} style={{ ...tdStyle, color: PALETTE.textDim, textAlign: 'center' }}>No trades yet.</td>
                   </tr>
                 )}
               </tbody>
@@ -375,62 +265,41 @@ export function TradingScreen() {
         <PixelPanel title="P&L Summary">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{
-              backgroundColor: PALETTE.bgLight,
-              border: `2px solid ${PALETTE.panelLight}`,
-              padding: '12px',
-              ...vtFont,
-              fontSize: '16px',
+              backgroundColor: PALETTE.bgLight, border: `1px solid ${PALETTE.panelBorder}`,
+              borderRadius: '8px', padding: '14px',
             }}>
-              <div style={{ marginBottom: '8px' }}>
-                <span style={{ color: PALETTE.textDim }}>Realized P&L: </span>
+              {[
+                { label: 'Realized P&L', value: formatCurrency(portfolio.totalRealized), color: portfolio.totalRealized >= 0 ? PALETTE.green : PALETTE.red },
+                { label: 'Unrealized P&L', value: formatCurrency(totalUnrealized), color: totalUnrealized >= 0 ? PALETTE.green : PALETTE.red },
+              ].map((item) => (
+                <div key={item.label} style={{ marginBottom: '10px' }}>
+                  <span style={label}>{item.label}: </span>
+                  <span style={{ fontFamily: FONT.mono, fontSize: '18px', fontWeight: 600, color: item.color }}>{item.value}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: '10px', marginTop: '4px' }}>
+                <span style={label}>Total P&L: </span>
                 <span style={{
-                  color: portfolio.totalRealized >= 0 ? PALETTE.green : PALETTE.red,
-                  fontSize: '22px',
-                }}>
-                  {formatCurrency(portfolio.totalRealized)}
-                </span>
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                <span style={{ color: PALETTE.textDim }}>Unrealized P&L: </span>
-                <span style={{
-                  color: totalUnrealized >= 0 ? PALETTE.green : PALETTE.red,
-                  fontSize: '22px',
-                }}>
-                  {formatCurrency(totalUnrealized)}
-                </span>
-              </div>
-              <div style={{
-                borderTop: `2px solid ${PALETTE.panelLight}`,
-                paddingTop: '8px',
-                marginTop: '8px',
-              }}>
-                <span style={{ color: PALETTE.textDim }}>Total P&L: </span>
-                <span style={{
+                  fontFamily: FONT.mono, fontSize: '20px', fontWeight: 700,
                   color: (portfolio.totalRealized + totalUnrealized) >= 0 ? PALETTE.green : PALETTE.red,
-                  fontSize: '24px',
                 }}>
                   {formatCurrency(portfolio.totalRealized + totalUnrealized)}
                 </span>
               </div>
             </div>
 
-            <div style={{ ...vtFont, fontSize: '16px' }}>
-              <div>
-                <span style={{ color: PALETTE.textDim }}>Total Trades: </span>
-                <span>{statistics.totalTradesMade}</span>
-              </div>
-              <div>
-                <span style={{ color: PALETTE.textDim }}>Largest Trade: </span>
-                <span>{formatCurrency(statistics.largestSingleTrade)}</span>
-              </div>
-              <div>
-                <span style={{ color: PALETTE.textDim }}>Total Profit: </span>
-                <span style={{ color: PALETTE.green }}>{formatCurrency(bestTrade)}</span>
-              </div>
-              <div>
-                <span style={{ color: PALETTE.textDim }}>Total Loss: </span>
-                <span style={{ color: PALETTE.red }}>{formatCurrency(worstTrade)}</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {[
+                { l: 'Total Trades', v: String(statistics.totalTradesMade) },
+                { l: 'Largest Trade', v: formatCurrency(statistics.largestSingleTrade) },
+                { l: 'Total Profit', v: formatCurrency(bestTrade), c: PALETTE.green },
+                { l: 'Total Loss', v: formatCurrency(worstTrade), c: PALETTE.red },
+              ].map((item) => (
+                <div key={item.l} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={label}>{item.l}:</span>
+                  <span style={{ ...val, color: item.c ?? PALETTE.text }}>{item.v}</span>
+                </div>
+              ))}
             </div>
           </div>
         </PixelPanel>

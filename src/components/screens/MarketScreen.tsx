@@ -150,87 +150,92 @@ export function MarketScreen() {
         ))}
       </div>
 
-      {/* Asset Table */}
-      <PixelPanel title="Assets">
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Ticker</th>
-                <th style={thStyle}>Name</th>
-                <th style={thStyle}>Class</th>
-                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('price')}>
-                  Price{sortArrow('price')}
-                </th>
-                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('change')}>
-                  Change{sortArrow('change')}
-                </th>
-                <th style={thStyle}>30D Chart</th>
-                <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('volatility')}>
-                  Volatility{sortArrow('volatility')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAssets.map((asset, idx) => {
-                const isSelected = selectedAssetId === asset.def.id;
-                const last30 = asset.state.priceHistory.slice(-30);
-                return (
-                  <tr
-                    key={asset.def.id}
-                    style={{
-                      backgroundColor: isSelected
-                        ? `${PALETTE.accent}12`
-                        : idx % 2 === 0 ? 'transparent' : `${PALETTE.bgLight}80`,
-                      cursor: 'pointer',
-                      transition: 'background-color 0.1s ease',
-                    }}
-                    onClick={() => setSelectedAsset(isSelected ? null : asset.def.id)}
-                  >
-                    <td style={{ ...tdStyle, color: PALETTE.accent, fontWeight: 600 }}>{asset.def.ticker}</td>
-                    <td style={tdStyle}>{asset.def.name}</td>
-                    <td style={{ ...tdStyle, color: PALETTE.textSecondary, fontSize: '12px' }}>
-                      {asset.def.class.replace('_', ' ')}
-                    </td>
-                    <td style={tdStyle}>{formatCurrency(asset.state.price)}</td>
-                    <td style={tdStyle}>
-                      <PriceChange current={asset.state.price} previous={asset.state.previousPrice} format="percent" />
-                    </td>
-                    <td style={tdStyle}>
-                      {last30.length >= 2 && <SparkLine data={last30} width={80} height={20} />}
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        color: asset.state.volatility > 0.5 ? PALETTE.red
-                          : asset.state.volatility > 0.25 ? PALETTE.gold : PALETTE.green,
-                      }}>
-                        {formatPercent(asset.state.volatility)}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </PixelPanel>
+      {/* Main Content: Table (left) + Detail Panel (right) */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+        {/* Asset Table */}
+        <PixelPanel title="Assets" style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Ticker</th>
+                  <th style={thStyle}>Name</th>
+                  <th style={thStyle}>Class</th>
+                  <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('price')}>
+                    Price{sortArrow('price')}
+                  </th>
+                  <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('change')}>
+                    Change{sortArrow('change')}
+                  </th>
+                  <th style={thStyle}>30D Chart</th>
+                  <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('volatility')}>
+                    Volatility{sortArrow('volatility')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAssets.map((asset, idx) => {
+                  const isSelected = selectedAssetId === asset.def.id;
+                  const last30 = asset.state.priceHistory.slice(-30);
+                  return (
+                    <tr
+                      key={asset.def.id}
+                      style={{
+                        backgroundColor: isSelected
+                          ? `${PALETTE.accent}12`
+                          : idx % 2 === 0 ? 'transparent' : `${PALETTE.bgLight}80`,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.1s ease',
+                      }}
+                      onClick={() => setSelectedAsset(isSelected ? null : asset.def.id)}
+                    >
+                      <td style={{ ...tdStyle, color: PALETTE.accent, fontWeight: 600 }}>{asset.def.ticker}</td>
+                      <td style={tdStyle}>{asset.def.name}</td>
+                      <td style={{ ...tdStyle, color: PALETTE.textSecondary, fontSize: '12px' }}>
+                        {asset.def.class.replace('_', ' ')}
+                      </td>
+                      <td style={tdStyle}>{formatCurrency(asset.state.price)}</td>
+                      <td style={tdStyle}>
+                        <PriceChange current={asset.state.price} previous={asset.state.previousPrice} format="percent" />
+                      </td>
+                      <td style={tdStyle}>
+                        {last30.length >= 2 && <SparkLine data={last30} width={80} height={20} />}
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          color: asset.state.volatility > 0.5 ? PALETTE.red
+                            : asset.state.volatility > 0.25 ? PALETTE.gold : PALETTE.green,
+                        }}>
+                          {formatPercent(asset.state.volatility)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </PixelPanel>
 
-      {/* Selected Asset Detail */}
-      {selectedDef && selectedState && (
-        <PixelPanel title={`${selectedDef.ticker} - ${selectedDef.name}`}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Left: Chart + Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Selected Asset Detail - Right Side Panel */}
+        {selectedDef && selectedState && (
+          <PixelPanel title={`${selectedDef.ticker} - ${selectedDef.name}`} style={{ width: '380px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Price + Change */}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                <span style={{ fontFamily: FONT.mono, fontSize: '26px', fontWeight: 700, color: PALETTE.text }}>
+                <span style={{ fontFamily: FONT.mono, fontSize: '24px', fontWeight: 700, color: PALETTE.text }}>
                   {formatCurrency(selectedState.price)}
                 </span>
                 <PriceChange current={selectedState.price} previous={selectedState.previousPrice} format="percent" />
               </div>
-              <PriceChart data={selectedState.priceHistory.slice(-90)} width={380} height={200} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div><span style={label}>Annual Return: </span><span style={val}>{formatPercent(selectedDef.annualDrift)}</span></div>
-                <div><span style={label}>Volatility: </span><span style={val}>{formatPercent(selectedState.volatility)}</span></div>
+
+              {/* Chart */}
+              <PriceChart data={selectedState.priceHistory.slice(-90)} width={340} height={160} />
+
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div><span style={label}>Return: </span><span style={val}>{formatPercent(selectedDef.annualDrift)}</span></div>
+                <div><span style={label}>Vol: </span><span style={val}>{formatPercent(selectedState.volatility)}</span></div>
                 <div>
                   <span style={label}>Regime: </span>
                   <span style={{
@@ -243,85 +248,86 @@ export function MarketScreen() {
                 </div>
                 <div><span style={label}>Class: </span><span style={val}>{selectedDef.class.replace('_', ' ')}</span></div>
               </div>
-              <div style={{ ...label, fontSize: '13px', lineHeight: 1.5 }}>{selectedDef.description}</div>
-            </div>
 
-            {/* Right: Trade Panel */}
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: '12px',
-              backgroundColor: PALETTE.bgLight, border: `1px solid ${PALETTE.panelBorder}`,
-              borderRadius: '8px', padding: '16px',
-            }}>
-              <div style={{ fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600, color: PALETTE.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Quick Trade
-              </div>
-              <div style={{ ...label, fontSize: '13px' }}>
-                <span>Your Position: </span>
-                <span style={{ color: PALETTE.text }}>
-                  {currentPosition ? `${currentPosition.quantity} shares @ ${formatCurrency(currentPosition.averageCost)}` : 'None'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={label}>Qty:</span>
-                <input
-                  type="number"
-                  min="1"
-                  value={tradeQty}
-                  onChange={(e) => setTradeQty(e.target.value)}
-                  style={{
-                    width: '80px', padding: '6px 8px',
-                    backgroundColor: PALETTE.bg, color: PALETTE.text,
-                    border: `1px solid ${PALETTE.panelBorder}`, borderRadius: '4px',
-                    fontFamily: FONT.mono, fontSize: '13px',
-                  }}
-                />
-                {currentPosition && (
-                  <button
-                    type="button"
-                    style={{
-                      fontFamily: FONT.ui, fontSize: '11px', fontWeight: 500,
-                      color: PALETTE.cyan, background: 'none',
-                      border: `1px solid ${PALETTE.cyan}`, borderRadius: '4px',
-                      padding: '4px 8px', cursor: 'pointer',
-                    }}
-                    onClick={() => setTradeQty(String(currentPosition.quantity))}
-                  >
-                    Max
-                  </button>
-                )}
-              </div>
+              <div style={{ ...label, fontSize: '12px', lineHeight: 1.4 }}>{selectedDef.description}</div>
+
+              {/* Trade Panel */}
               <div style={{
-                ...label, fontSize: '12px',
-                backgroundColor: PALETTE.bg, borderRadius: '6px',
-                padding: '10px', border: `1px solid ${PALETTE.panelBorder}`,
+                display: 'flex', flexDirection: 'column', gap: '10px',
+                backgroundColor: PALETTE.bgLight, border: `1px solid ${PALETTE.panelBorder}`,
+                borderRadius: '8px', padding: '14px',
               }}>
-                <div>Price: <span style={{ color: PALETTE.text }}>{formatCurrency(selectedPrice)}</span></div>
-                <div>Commission: <span style={{ color: PALETTE.text }}>{formatCurrency(commission)}</span></div>
-                <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: '6px', marginTop: '6px' }}>
-                  Total Cost: <span style={{ color: PALETTE.gold, fontWeight: 600 }}>{formatCurrency(totalBuyCost)}</span>
+                <div style={{ fontFamily: FONT.ui, fontSize: '11px', fontWeight: 600, color: PALETTE.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Quick Trade
                 </div>
-                <div style={{ marginTop: '4px' }}>Cash Available: <span style={{ color: PALETTE.text }}>{formatCurrency(cash)}</span></div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <PixelButton
-                  variant={canBuy ? 'success' : 'disabled'}
-                  onClick={() => { if (canBuy) { executeBuy(selectedAssetId!, qty); setTradeQty('1'); } }}
-                  style={{ flex: 1 }}
-                >
-                  BUY
-                </PixelButton>
-                <PixelButton
-                  variant={canSell ? 'error' : 'disabled'}
-                  onClick={() => { if (canSell) { executeSell(selectedAssetId!, qty); setTradeQty('1'); } }}
-                  style={{ flex: 1 }}
-                >
-                  SELL
-                </PixelButton>
+                <div style={{ ...label, fontSize: '13px' }}>
+                  <span>Position: </span>
+                  <span style={{ color: PALETTE.text }}>
+                    {currentPosition ? `${currentPosition.quantity} @ ${formatCurrency(currentPosition.averageCost)}` : 'None'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={label}>Qty:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={tradeQty}
+                    onChange={(e) => setTradeQty(e.target.value)}
+                    style={{
+                      width: '80px', padding: '6px 8px',
+                      backgroundColor: PALETTE.bg, color: PALETTE.text,
+                      border: `1px solid ${PALETTE.panelBorder}`, borderRadius: '4px',
+                      fontFamily: FONT.mono, fontSize: '13px',
+                    }}
+                  />
+                  {currentPosition && (
+                    <button
+                      type="button"
+                      style={{
+                        fontFamily: FONT.ui, fontSize: '11px', fontWeight: 500,
+                        color: PALETTE.cyan, background: 'none',
+                        border: `1px solid ${PALETTE.cyan}`, borderRadius: '4px',
+                        padding: '4px 8px', cursor: 'pointer',
+                      }}
+                      onClick={() => setTradeQty(String(currentPosition.quantity))}
+                    >
+                      Max
+                    </button>
+                  )}
+                </div>
+                <div style={{
+                  ...label, fontSize: '12px',
+                  backgroundColor: PALETTE.bg, borderRadius: '6px',
+                  padding: '10px', border: `1px solid ${PALETTE.panelBorder}`,
+                }}>
+                  <div>Price: <span style={{ color: PALETTE.text }}>{formatCurrency(selectedPrice)}</span></div>
+                  <div>Commission: <span style={{ color: PALETTE.text }}>{formatCurrency(commission)}</span></div>
+                  <div style={{ borderTop: `1px solid ${PALETTE.panelBorder}`, paddingTop: '6px', marginTop: '6px' }}>
+                    Total: <span style={{ color: PALETTE.gold, fontWeight: 600 }}>{formatCurrency(totalBuyCost)}</span>
+                  </div>
+                  <div style={{ marginTop: '4px' }}>Cash: <span style={{ color: PALETTE.text }}>{formatCurrency(cash)}</span></div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <PixelButton
+                    variant={canBuy ? 'success' : 'disabled'}
+                    onClick={() => { if (canBuy) { executeBuy(selectedAssetId!, qty); setTradeQty('1'); } }}
+                    style={{ flex: 1 }}
+                  >
+                    BUY
+                  </PixelButton>
+                  <PixelButton
+                    variant={canSell ? 'error' : 'disabled'}
+                    onClick={() => { if (canSell) { executeSell(selectedAssetId!, qty); setTradeQty('1'); } }}
+                    style={{ flex: 1 }}
+                  >
+                    SELL
+                  </PixelButton>
+                </div>
               </div>
             </div>
-          </div>
-        </PixelPanel>
-      )}
+          </PixelPanel>
+        )}
+      </div>
     </div>
   );
 }

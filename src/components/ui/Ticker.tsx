@@ -1,0 +1,83 @@
+import { useMemo, type CSSProperties } from 'react';
+import { useGameStore } from '../../store/gameStore.ts';
+import { ASSET_DEFINITIONS } from '../../data/assets.ts';
+import { PALETTE } from '../../styles/palette.ts';
+
+export function Ticker() {
+  const assets = useGameStore((s) => s.market.assets);
+
+  const tickerItems = useMemo(() => {
+    return ASSET_DEFINITIONS.map((def) => {
+      const state = assets[def.id];
+      if (!state) return null;
+      const change = state.previousPrice > 0
+        ? (state.price - state.previousPrice) / state.previousPrice
+        : 0;
+      return {
+        ticker: def.ticker,
+        price: state.price,
+        change,
+      };
+    }).filter(Boolean) as { ticker: string; price: number; change: number }[];
+  }, [assets]);
+
+  // Duplicate items for seamless loop
+  const allItems = [...tickerItems, ...tickerItems];
+
+  const wrapperStyle: CSSProperties = {
+    overflow: 'hidden',
+    width: '100%',
+    backgroundColor: PALETTE.bgLight,
+    borderTop: `2px solid ${PALETTE.panelLight}`,
+    borderBottom: `2px solid ${PALETTE.panelLight}`,
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+  };
+
+  const trackStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '24px',
+    whiteSpace: 'nowrap',
+    animation: `tickerScroll ${tickerItems.length * 3}s linear infinite`,
+    fontFamily: "'VT323', monospace",
+    fontSize: '18px',
+  };
+
+  const formatPrice = (price: number): string => {
+    if (price >= 1000) return `$${price.toFixed(0)}`;
+    if (price >= 1) return `$${price.toFixed(2)}`;
+    return `$${price.toFixed(4)}`;
+  };
+
+  return (
+    <>
+      <style>{`
+        @keyframes tickerScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+      <div style={wrapperStyle}>
+        <div style={trackStyle}>
+          {allItems.map((item, idx) => {
+            const isUp = item.change >= 0;
+            const color = isUp ? PALETTE.green : PALETTE.red;
+            const arrow = isUp ? '\u25B2' : '\u25BC';
+            const pct = (item.change * 100).toFixed(2);
+            return (
+              <span key={idx} style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                <span style={{ color: PALETTE.gold, fontWeight: 'bold' }}>{item.ticker}</span>
+                <span style={{ color: PALETTE.text }}>{formatPrice(item.price)}</span>
+                <span style={{ color }}>
+                  {arrow} {isUp ? '+' : ''}{pct}%
+                </span>
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}

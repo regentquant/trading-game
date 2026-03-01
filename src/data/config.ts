@@ -1,5 +1,5 @@
 export const CONFIG = {
-  TICKS_PER_SECOND: { 1: 1, 2: 2, 5: 5 } as Record<number, number>,
+  TICKS_PER_SECOND: { 1: 0.5, 2: 1, 5: 2.5 } as Record<number, number>,
   MAX_TICKS_PER_FRAME: 10,
   DAYS_PER_MONTH: 30,
   AUTOSAVE_INTERVAL_SECONDS: 60,

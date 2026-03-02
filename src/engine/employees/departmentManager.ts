@@ -235,9 +235,10 @@ export function tickEmployees(state: GameState, rng?: RNG): Partial<GameState> {
     }
   }
 
-  return {
-    employees,
-    departments,
-    statistics,
-  };
+  const result: Partial<GameState> = { employees, statistics };
+  // Only return departments when employees quit — avoids unnecessary state replacement
+  if (quitEvents.length > 0) {
+    result.departments = departments;
+  }
+  return result;
 }

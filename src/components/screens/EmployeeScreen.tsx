@@ -58,18 +58,21 @@ export function EmployeeScreen() {
 
   const [mainTab, setMainTab] = useState<MainTab>('departments');
   const [hiringSubTab, setHiringSubTab] = useState<HiringSubTab>('campus');
-  const [selectedDeptId, setSelectedDeptId] = useState<string>('general');
+  const [selectedDeptId, setSelectedDeptId] = useState<string>('all');
   const [showFireConfirm, setShowFireConfirm] = useState(false);
 
   const deptList = useMemo(() => Object.values(departments), [departments]);
-  const currentDept = departments[selectedDeptId];
+  const currentDept = selectedDeptId !== 'all' ? departments[selectedDeptId] : null;
   const maxEmployees = CONFIG.OFFICE_MAX_EMPLOYEES[officeLevel] ?? 10;
   const currentEmployeeCount = Object.keys(employees).length;
 
   const deptEmployees = useMemo(() => {
+    if (selectedDeptId === 'all') {
+      return Object.values(employees);
+    }
     if (!currentDept) return [];
     return currentDept.employeeIds.map((id) => employees[id]).filter(Boolean) as Employee[];
-  }, [currentDept, employees]);
+  }, [selectedDeptId, currentDept, employees]);
 
   const selectedEmployee = selectedEmployeeId ? employees[selectedEmployeeId] : null;
 
@@ -121,6 +124,9 @@ export function EmployeeScreen() {
         <div style={{ display: 'grid', gridTemplateColumns: selectedEmployee ? '1fr 1fr' : '1fr', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button type="button" style={tabStyle(selectedDeptId === 'all')} onClick={() => setSelectedDeptId('all')}>
+                All ({currentEmployeeCount})
+              </button>
               {deptList.map((dept) => (
                 <button key={dept.id} type="button" style={tabStyle(selectedDeptId === dept.id)} onClick={() => setSelectedDeptId(dept.id)}>
                   {dept.name} ({dept.employeeIds.length})
